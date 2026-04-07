@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/sender";
+import { render } from "@react-email/components";
+import { TestEmail } from "@/lib/email/templates";
 
 /**
  * POST /api/emails/test
- * Sends a test email to verify the user's email configuration is working
+ * Sends a beautiful test email to verify the user's email configuration
  */
 export async function POST(request: NextRequest) {
   try {
@@ -50,28 +52,24 @@ export async function POST(request: NextRequest) {
     const domain = defaultFrom.split("@")[1] || "novamintnetworks.in";
     const fromAddress = `${nameSlug}@${domain}`;
 
+    // Render the premium React Email template
+    const htmlContent = await render(
+      TestEmail({
+        senderName,
+        companyName: profile?.company_name || "PitchPilot",
+        sendingEmail: fromAddress,
+        replyTo: profile?.sending_email || user.email || "",
+      })
+    );
+
     const result = await sendEmail({
       to: recipientEmail,
       from: fromAddress,
       senderName,
       replyTo: profile?.sending_email || user.email || undefined,
-      subject: "✅ PitchPilot Test Email — Your Setup Works!",
-      body: `Hi there!
-
-This is a test email from PitchPilot to confirm your email configuration is working correctly.
-
-Here's what we verified:
-• Email sending is operational
-• Your sender name appears as: ${senderName}
-• Replies will go to: ${profile?.sending_email || user.email}
-• Tracking pixel is embedded (open tracking)
-• Unsubscribe footer is included
-
-If you received this email, everything is set up correctly. You're ready to start your outreach!
-
-Best,
-${senderName}
-${profile?.company_name || "PitchPilot"}`,
+      subject: "✅ PitchPilot — Your Email Setup is Working!",
+      body: `Test email from PitchPilot — your configuration is working correctly.`,
+      bodyHtml: htmlContent,
       trackOpens: true,
       trackClicks: false,
     });

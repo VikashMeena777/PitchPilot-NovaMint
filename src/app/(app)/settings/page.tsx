@@ -100,7 +100,21 @@ export default function SettingsPage() {
     const gmailStatus = params.get("gmail");
     if (gmailStatus === "success") {
       toast.success("Gmail connected successfully!");
+      // Immediately update local UI state
+      setProfile(prev => ({ ...prev, gmail_connected: true }));
       window.history.replaceState({}, "", "/settings");
+      // Re-fetch profile to get the actual gmail_email from DB
+      setTimeout(async () => {
+        const result = await getUserProfile();
+        if (result.data) {
+          setProfile(prev => ({
+            ...prev,
+            gmail_connected: result.data.gmail_connected || false,
+            gmail_email: result.data.gmail_email || "",
+            sending_email: result.data.sending_email || prev.sending_email,
+          }));
+        }
+      }, 500);
     } else if (gmailStatus === "error") {
       const reason = params.get("reason") || "unknown";
       toast.error(`Gmail connection failed: ${reason.replace(/_/g, " ")}`);

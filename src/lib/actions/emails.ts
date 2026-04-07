@@ -2,9 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/sender";
+import { sendViaGmail } from "@/lib/email/gmail";
+import { logActivity } from "@/lib/utils/activity-logger";
 
 /**
- * Send a single email to a prospect and track it in the database
+ * Send a single email to a prospect and track it in the database.
+ *
+ * Sender Strategy (in priority order):
+ *  1. Gmail API — if the user has connected their Gmail account
+ *  2. Resend — default fallback via verified domain
  */
 export async function sendProspectEmail(params: {
   prospectId: string;
@@ -29,44 +35,45 @@ export async function sendProspectEmail(params: {
 
   if (!prospect) return { success: false, error: "Prospect not found" };
 
-  // Fetch user profile for sender info
+  // Fetch user profile — include Gmail fields for routing decision
   const { data: profile } = await supabase
     .from("users")
-    .select("full_name, sending_email, sending_name, company_name, mailing_address")
+    .select("full_name, sending_email, sending_name, company_name, mailing_address, gmail_connected, gmail_email")
     .eq("id", user.id)
     .single();
 
   const senderName = profile?.sending_name || profile?.full_name || "PitchPilot User";
-  
-  // Build a personalized from address using the verified domain
-  // e.g., "Vikash Meena <vikash@novamintnetworks.in>"
-  const verifiedDomain = (process.env.DEFAULT_FROM_EMAIL || "outreach@novamintnetworks.in").split("@")[1];
-  const namePrefix = (profile?.full_name || user.email?.split("@")[0] || "outreach")
-    .toLowerCase()
-    .replace(/\s+/g, ".")   // "Vikash Meena" → "vikash.meena"
-    .replace(/[^a-z0-9.]/g, ""); // remove special chars
-  const fromAddress = `${namePrefix}@${verifiedDomain}`;
   const userEmail = profile?.sending_email || user.email;
 
-  // Send via Resend
-  const result = await sendEmail({
-    to: prospect.email,
-    from: fromAddress,
-    senderName,
-    subject: params.subject,
-    body: params.body,
-    replyTo: userEmail, // replies go to the user's actual email
-    companyName: profile?.company_name || "",
-    mailingAddress: profile?.mailing_address || "",
-    tags: [
-      { name: "prospect_id", value: params.prospectId },
-      { name: "user_id", value: user.id },
-      ...(params.sequenceId ? [{ name: "sequence_id", value: params.sequenceId }] : []),
-    ],
-  });
+  let sendResult: { success: boolean; messageId?: string; error?: string };
+  let sentViaGmail = false;
 
-  if (!result.success) {
-    return { success: false, error: result.error || "Send failed" };
+  // ─── Strategy 1: Gmail (primary when connected) ───────────────────
+  if (profile?.gmail_connected && profile?.gmail_email) {
+    const gmailResult = await sendViaGmail(user.id, {
+      to: prospect.email,
+      subject: params.subject,
+      body: params.body,
+      bodyHtml: params.body, // body already contains HTML from the editor
+      senderName,
+      replyTo: userEmail,
+    });
+
+    if (gmailResult.success) {
+      sendResult = gmailResult;
+      sentViaGmail = true;
+    } else {
+      // Gmail failed — fall through to Resend as backup
+      console.warn(`[Email] Gmail send failed, falling back to Resend: ${gmailResult.error}`);
+      sendResult = await sendViaResend(prospect.email, senderName, userEmail, params, profile, user.id);
+    }
+  } else {
+    // ─── Strategy 2: Resend (default) ─────────────────────────────
+    sendResult = await sendViaResend(prospect.email, senderName, userEmail, params, profile, user.id);
+  }
+
+  if (!sendResult.success) {
+    return { success: false, error: sendResult.error || "Send failed" };
   }
 
   // Record email in database
@@ -81,10 +88,10 @@ export async function sendProspectEmail(params: {
     body_text: params.body.replace(/<[^>]*>/g, ""),
     status: "sent",
     sent_at: new Date().toISOString(),
-    resend_id: result.messageId || null,
+    resend_id: sendResult.messageId || null,
   });
 
-  // Update prospect email count (manual increment)
+  // Update prospect email count
   try {
     await supabase
       .from("prospects")
@@ -106,7 +113,56 @@ export async function sendProspectEmail(params: {
     .eq("user_id", user.id)
     .eq("status", "new");
 
+  // ─── Activity Logging (fire-and-forget) ────────────────────────
+  logActivity({
+    user_id: user.id,
+    action: "email.sent",
+    resource_type: "email",
+    resource_id: params.prospectId,
+    metadata: {
+      to: prospect.email,
+      subject: params.subject,
+      via: sentViaGmail ? "gmail" : "resend",
+      sequence_id: params.sequenceId || null,
+    },
+  });
+
   return { success: true, error: null };
+}
+
+/**
+ * Send via Resend (fallback path)
+ */
+async function sendViaResend(
+  toEmail: string,
+  senderName: string,
+  userEmail: string | undefined | null,
+  params: { subject: string; body: string; prospectId: string; sequenceId?: string },
+  profile: { full_name?: string; company_name?: string; mailing_address?: string } | null,
+  userId: string,
+) {
+  const verifiedDomain = (process.env.DEFAULT_FROM_EMAIL || "outreach@novamintnetworks.in").split("@")[1];
+  const namePrefix = (profile?.full_name || "outreach")
+    .toLowerCase()
+    .replace(/\s+/g, ".")
+    .replace(/[^a-z0-9.]/g, "");
+  const fromAddress = `${namePrefix}@${verifiedDomain}`;
+
+  return sendEmail({
+    to: toEmail,
+    from: fromAddress,
+    senderName,
+    subject: params.subject,
+    body: params.body,
+    replyTo: userEmail || undefined,
+    companyName: profile?.company_name || "",
+    mailingAddress: profile?.mailing_address || "",
+    tags: [
+      { name: "prospect_id", value: params.prospectId },
+      { name: "user_id", value: userId },
+      ...(params.sequenceId ? [{ name: "sequence_id", value: params.sequenceId }] : []),
+    ],
+  });
 }
 
 /**

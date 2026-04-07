@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/utils/activity-logger";
 
 export type SequenceFormData = {
   name: string;
@@ -76,6 +77,16 @@ export async function createSequence(form: SequenceFormData) {
   if (error) return { error: error.message };
 
   revalidatePath("/sequences");
+
+  // Activity logging (fire-and-forget)
+  logActivity({
+    user_id: user.id,
+    action: "sequence.created",
+    resource_type: "sequence",
+    resource_id: data.id,
+    metadata: { name: form.name },
+  });
+
   return { data };
 }
 

@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email/sender";
+import { sendViaGmail } from "@/lib/email/gmail";
 import { render } from "@react-email/components";
 import { TestEmail } from "@/lib/email/templates";
 
 /**
  * POST /api/emails/test
- * Sends a beautiful test email to verify the user's email configuration
+ * Sends a test email to verify the user's email configuration.
+ *
+ * Sender strategy:
+ *  1. Gmail API — if user has gmail_connected
+ *  2. Resend — fallback
  */
 export async function POST(request: NextRequest) {
   try {
@@ -32,19 +37,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user profile for sender info
+    // Get user profile — include Gmail fields
     const { data: profile } = await supabase
       .from("users")
-      .select("sending_name, sending_email, full_name, company_name")
+      .select("sending_name, sending_email, full_name, company_name, gmail_connected, gmail_email")
       .eq("id", user.id)
       .single();
 
     const senderName =
       profile?.sending_name || profile?.full_name || "PitchPilot User";
+
+    // ─── Strategy 1: Gmail (primary when connected) ──────────────
+    if (profile?.gmail_connected && profile?.gmail_email) {
+      // Render email template with Gmail context
+      const htmlContent = await render(
+        TestEmail({
+          senderName,
+          companyName: profile?.company_name || "PitchPilot",
+          sendingEmail: profile.gmail_email,
+          replyTo: profile?.sending_email || user.email || "",
+        })
+      );
+
+      const gmailResult = await sendViaGmail(user.id, {
+        to: recipientEmail,
+        subject: "✅ PitchPilot — Your Gmail Setup is Working!",
+        body: `Test email from PitchPilot — your Gmail integration is working correctly.`,
+        bodyHtml: htmlContent,
+        senderName,
+      });
+
+      if (gmailResult.success) {
+        return NextResponse.json({
+          success: true,
+          messageId: gmailResult.messageId,
+          message: "Test email sent via your Gmail account!",
+          via: "gmail",
+        });
+      }
+
+      // Gmail failed — fall through to Resend
+      console.warn(`[Test Email] Gmail failed, falling back to Resend: ${gmailResult.error}`);
+    }
+
+    // ─── Strategy 2: Resend (fallback / default) ─────────────────
     const defaultFrom =
       process.env.DEFAULT_FROM_EMAIL || "outreach@novamintnetworks.in";
 
-    // Build a personalized from address
     const nameSlug = (profile?.full_name || "user")
       .toLowerCase()
       .replace(/\s+/g, ".")
@@ -79,6 +118,7 @@ export async function POST(request: NextRequest) {
         success: true,
         messageId: result.messageId,
         message: "Test email sent successfully",
+        via: "resend",
       });
     } else {
       return NextResponse.json(

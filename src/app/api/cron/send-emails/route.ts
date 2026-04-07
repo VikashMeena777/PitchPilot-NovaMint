@@ -4,7 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 /**
  * Cron Job: Process Email Queue
  * Schedule: Every 5 minutes
- * Sends queued emails that are past their scheduled_at time
+ * Sends queued emails that are past their scheduled_at time.
+ *
+ * Sender strategy per-user:
+ *  1. Gmail API — if user has gmail_connected = true
+ *  2. Resend    — default fallback
  */
 export async function POST(request: NextRequest) {
   // Verify cron secret
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
   const { data: queuedEmails, error: fetchError } = await supabase
     .from("emails")
     .select(
-      "*, prospects(first_name, last_name, email), users(sending_email, sending_name, daily_send_limit, created_at)"
+      "*, prospects(first_name, last_name, email), users(sending_email, sending_name, daily_send_limit, created_at, gmail_connected, gmail_email)"
     )
     .eq("status", "queued")
     .lte("scheduled_at", new Date().toISOString())
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest) {
         .gte("sent_at", `${today}T00:00:00`)
         .lte("sent_at", `${today}T23:59:59`);
 
-      // Warm-up enforcement: gradually increase sending limits for new accounts
+      // Warm-up enforcement
       const { canSendMore } = await import("@/lib/email/warmup");
       const userCreatedAt = email.users?.created_at || new Date().toISOString();
       const dailyLimit = email.users?.daily_send_limit || 50;
@@ -74,47 +78,32 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      if (!resendApiKey) {
-        // Mark as failed if no email provider
-        await supabase
-          .from("emails")
-          .update({
-            status: "failed",
-            error_message: "No email provider configured (RESEND_API_KEY missing)",
-          })
-          .eq("id", email.id);
-        failed++;
-        continue;
+      // ─── Sender Strategy ──────────────────────────────────────
+      const userHasGmail = email.users?.gmail_connected && email.users?.gmail_email;
+      let sendResult: { success: boolean; messageId?: string; error?: string };
+
+      if (userHasGmail) {
+        // Strategy 1: Gmail API (primary)
+        const { sendViaGmail } = await import("@/lib/email/gmail");
+        const gmailResult = await sendViaGmail(email.user_id, {
+          to: email.to_email,
+          subject: email.subject,
+          body: email.body_text || "",
+          bodyHtml: email.body_html || undefined,
+          senderName: email.from_name || email.users?.sending_name || "PitchPilot",
+        });
+
+        if (gmailResult.success) {
+          sendResult = gmailResult;
+        } else {
+          // Gmail failed — fall back to Resend
+          console.warn(`[Cron] Gmail failed for ${email.id}, falling back to Resend: ${gmailResult.error}`);
+          sendResult = await sendViaResendCron(email, resendApiKey, supabase);
+        }
+      } else {
+        // Strategy 2: Resend (default)
+        sendResult = await sendViaResendCron(email, resendApiKey, supabase);
       }
-
-      // Send via the premium email sender
-      const defaultFrom = process.env.DEFAULT_FROM_EMAIL || "outreach@novamintnetworks.in";
-      const fromEmail = email.from_email || defaultFrom;
-      const fromName =
-        email.from_name || email.users?.sending_name || "PitchPilot";
-
-      // Fetch full user profile for template context
-      const { data: userProfile } = await supabase
-        .from("users")
-        .select("company_name, mailing_address")
-        .eq("id", email.user_id)
-        .single();
-
-      // Build premium HTML using the email sender's template
-      const { sendEmail: sendPremiumEmail } = await import("@/lib/email/sender");
-
-      const sendResult = await sendPremiumEmail({
-        to: email.to_email,
-        from: fromEmail,
-        senderName: fromName,
-        subject: email.subject,
-        body: email.body_text || "",
-        bodyHtml: email.body_html || undefined,
-        companyName: userProfile?.company_name || "",
-        mailingAddress: userProfile?.mailing_address || "",
-        trackOpens: true,
-        emailId: email.id,
-      });
 
       if (!sendResult.success) {
         throw new Error(sendResult.error || "Send failed");
@@ -142,7 +131,7 @@ export async function POST(request: NextRequest) {
 
       sent++;
 
-      // Random delay between sends (45-180 seconds simulated by smaller delay here)
+      // Random delay between sends (1-3 seconds)
       const delay = Math.floor(Math.random() * 3000) + 1000;
       await new Promise((resolve) => setTimeout(resolve, delay));
     } catch (error) {
@@ -169,3 +158,46 @@ export async function POST(request: NextRequest) {
     timestamp: new Date().toISOString(),
   });
 }
+
+/**
+ * Resend fallback for cron sends
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function sendViaResendCron(
+  email: any,
+  resendApiKey: string | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+) {
+  if (!resendApiKey) {
+    return { success: false, error: "No email provider configured (RESEND_API_KEY missing)" };
+  }
+
+  const defaultFrom = process.env.DEFAULT_FROM_EMAIL || "outreach@novamintnetworks.in";
+  const fromEmail: string = email.from_email || defaultFrom;
+  const fromName: string =
+    email.from_name || email.users?.sending_name || "PitchPilot";
+
+  // Fetch full user profile for template context
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("company_name, mailing_address")
+    .eq("id", email.user_id)
+    .single();
+
+  const { sendEmail: sendPremiumEmail } = await import("@/lib/email/sender");
+
+  return sendPremiumEmail({
+    to: email.to_email,
+    from: fromEmail,
+    senderName: fromName,
+    subject: email.subject,
+    body: email.body_text || "",
+    bodyHtml: email.body_html || undefined,
+    companyName: (userProfile as any)?.company_name || "",
+    mailingAddress: (userProfile as any)?.mailing_address || "",
+    trackOpens: true,
+    emailId: email.id,
+  });
+}
+

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/utils/activity-logger";
 
 export type ProspectFormData = {
   email: string;
@@ -98,6 +99,16 @@ export async function addProspect(formData: ProspectFormData) {
   }
 
   revalidatePath("/prospects");
+
+  // Activity logging (fire-and-forget)
+  logActivity({
+    user_id: user.id,
+    action: "prospect.created",
+    resource_type: "prospect",
+    resource_id: data.id,
+    metadata: { email: formData.email, source: "manual" },
+  });
+
   return { data };
 }
 
@@ -289,5 +300,15 @@ export async function importProspectsFromCsv(rows: CsvRow[], columnMapping: Reco
     .eq("id", upload.id);
 
   revalidatePath("/prospects");
+
+  // Activity logging (fire-and-forget)
+  logActivity({
+    user_id: user.id,
+    action: "prospect.imported",
+    resource_type: "csv_upload",
+    resource_id: upload.id,
+    metadata: { total: rows.length, success: successCount, failed: failCount },
+  });
+
   return { success: true, successCount, failCount, errors, uploadId: upload.id };
 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { Resend } from "resend";
 
 /**
  * Cron Job: Process Email Queue
@@ -28,8 +27,6 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const resend = resendApiKey ? new Resend(resendApiKey) : null;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   // Fetch queued emails ready to send
   const { data: queuedEmails, error: fetchError } = await supabase
@@ -77,7 +74,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      if (!resend) {
+      if (!resendApiKey) {
         // Mark as failed if no email provider
         await supabase
           .from("emails")
@@ -90,34 +87,37 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Add tracking pixel to email body
-      const trackingPixelUrl = `${appUrl}/api/emails/track/open/${email.tracking_pixel_id}`;
-      const trackingPixel = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" alt="" />`;
-
-      // Add unsubscribe link
-      const unsubscribeText = `\n\n---\nIf you'd like to stop receiving these emails, reply with "unsubscribe" and we'll remove you immediately.`;
-
-      const bodyHtml =
-        (email.body_html || `<p>${email.body_text || ""}</p>`) +
-        trackingPixel;
-      const bodyText = (email.body_text || "") + unsubscribeText;
-
-      // Send via Resend — use verified domain
+      // Send via the premium email sender
       const defaultFrom = process.env.DEFAULT_FROM_EMAIL || "outreach@novamintnetworks.in";
       const fromEmail = email.from_email || defaultFrom;
       const fromName =
         email.from_name || email.users?.sending_name || "PitchPilot";
 
-      const { data: sendResult, error: sendError } = await resend.emails.send({
-        from: `${fromName} <${fromEmail}>`,
-        to: [email.to_email],
+      // Fetch full user profile for template context
+      const { data: userProfile } = await supabase
+        .from("users")
+        .select("company_name, mailing_address")
+        .eq("id", email.user_id)
+        .single();
+
+      // Build premium HTML using the email sender's template
+      const { sendEmail: sendPremiumEmail } = await import("@/lib/email/sender");
+
+      const sendResult = await sendPremiumEmail({
+        to: email.to_email,
+        from: fromEmail,
+        senderName: fromName,
         subject: email.subject,
-        html: bodyHtml,
-        text: bodyText,
+        body: email.body_text || "",
+        bodyHtml: email.body_html || undefined,
+        companyName: userProfile?.company_name || "",
+        mailingAddress: userProfile?.mailing_address || "",
+        trackOpens: true,
+        emailId: email.id,
       });
 
-      if (sendError) {
-        throw new Error(sendError.message);
+      if (!sendResult.success) {
+        throw new Error(sendResult.error || "Send failed");
       }
 
       // Update email status to sent
@@ -126,8 +126,7 @@ export async function POST(request: NextRequest) {
         .update({
           status: "sent",
           sent_at: new Date().toISOString(),
-          resend_id: sendResult?.id || null,
-          body_html: bodyHtml,
+          resend_id: sendResult.messageId || null,
         })
         .eq("id", email.id);
 

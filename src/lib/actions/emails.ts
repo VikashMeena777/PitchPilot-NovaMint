@@ -32,7 +32,7 @@ export async function sendProspectEmail(params: {
   // Fetch user profile for sender info
   const { data: profile } = await supabase
     .from("users")
-    .select("full_name, sending_email, sending_name, company_name")
+    .select("full_name, sending_email, sending_name, company_name, mailing_address")
     .eq("id", user.id)
     .single();
 
@@ -56,6 +56,8 @@ export async function sendProspectEmail(params: {
     subject: params.subject,
     body: params.body,
     replyTo: userEmail, // replies go to the user's actual email
+    companyName: profile?.company_name || "",
+    mailingAddress: profile?.mailing_address || "",
     tags: [
       { name: "prospect_id", value: params.prospectId },
       { name: "user_id", value: user.id },

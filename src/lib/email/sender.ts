@@ -24,6 +24,9 @@ export type SendEmailParams = {
   trackOpens?: boolean;
   trackClicks?: boolean;
   emailId?: string; // For click tracking
+  // Sender context for template
+  companyName?: string;
+  mailingAddress?: string;
 };
 
 export type SendEmailResult = {
@@ -77,24 +80,6 @@ function injectClickTracking(html: string, emailId: string): string {
 }
 
 /**
- * Add unsubscribe footer to HTML email (CAN-SPAM compliant)
- */
-function addUnsubscribeFooter(html: string, mailingAddress?: string): string {
-  const addressLine = mailingAddress
-    ? `<br>${mailingAddress.replace(/\n/g, ", ")}`
-    : "";
-  const footer = `
-    <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e5;font-size:11px;color:#999;line-height:1.5;">
-      If you'd like to stop receiving these emails, simply reply with "unsubscribe" and we'll remove you immediately.${addressLine}
-    </div>`;
-
-  if (html.includes("</body>")) {
-    return html.replace("</body>", `${footer}</body>`);
-  }
-  return html + footer;
-}
-
-/**
  * Send a single email via Resend with tracking
  */
 export async function sendEmail(
@@ -114,11 +99,13 @@ export async function sendEmail(
   // Generate tracking pixel ID
   const trackingPixelId = generateTrackingPixelId();
 
-  // Build HTML
-  let html = params.bodyHtml || formatEmailHtml(params.body);
-
-  // Add unsubscribe footer
-  html = addUnsubscribeFooter(html);
+  // Build HTML — use pre-rendered bodyHtml or create from plain text
+  let html = params.bodyHtml || formatOutreachHtml(params.body, {
+    senderName: params.senderName || "",
+    companyName: params.companyName || "",
+    fromEmail: fromAddress,
+    mailingAddress: params.mailingAddress || "",
+  });
 
   // Inject tracking if enabled
   if (params.trackOpens !== false) {
@@ -170,8 +157,12 @@ export async function sendBatchEmails(
   }
 
   const batch = emails.slice(0, 100).map((e) => {
-    let html = e.bodyHtml || formatEmailHtml(e.body);
-    html = addUnsubscribeFooter(html);
+    let html = e.bodyHtml || formatOutreachHtml(e.body, {
+      senderName: e.senderName || "",
+      companyName: e.companyName || "",
+      fromEmail: e.from || "",
+      mailingAddress: e.mailingAddress || "",
+    });
     const trackingPixelId = generateTrackingPixelId();
     if (e.trackOpens !== false) {
       html = injectTrackingPixel(html, trackingPixelId);
@@ -211,27 +202,137 @@ export async function sendBatchEmails(
 }
 
 /**
- * Convert plain text email body to minimal HTML with proper formatting
+ * Format outreach email as premium HTML
+ * Design: Clean, personal, professional — looks like it came from a real person's email client
+ * NOT heavily branded — that kills deliverability for cold outreach
  */
-function formatEmailHtml(body: string): string {
-  const escaped = body
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br>");
+function formatOutreachHtml(
+  body: string,
+  context: {
+    senderName: string;
+    companyName: string;
+    fromEmail: string;
+    mailingAddress: string;
+  }
+): string {
+  // Convert plain text body to properly formatted HTML paragraphs
+  const paragraphs = body
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      // Convert single newlines to <br>
+      const formatted = p
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\n/g, "<br>");
+      return `<p style="margin:0 0 16px;line-height:1.7;">${formatted}</p>`;
+    })
+    .join("\n");
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const unsubscribeUrl = `${appUrl}/api/emails/unsubscribe`;
 
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 15px; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; }
-    a { color: #2563eb; }
+    /* Reset */
+    body, table, td { margin:0; padding:0; }
+    img { border:0; height:auto; line-height:100%; outline:none; text-decoration:none; }
+    
+    /* Base */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #ffffff;
+      color: #1a1a2e;
+    }
+    
+    /* Links */
+    a { color: #6366f1; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body { background-color: #1a1a2e !important; color: #e2e8f0 !important; }
+      .email-container { background-color: #1e1e32 !important; }
+      .text-body { color: #e2e8f0 !important; }
+      .text-muted { color: #94a3b8 !important; }
+      .signature-line { border-color: #334155 !important; }
+      .footer-text { color: #64748b !important; }
+      a { color: #818cf8 !important; }
+    }
+    
+    /* Mobile responsive */
+    @media only screen and (max-width: 600px) {
+      .email-container { padding: 20px 16px !important; }
+      .text-body { font-size: 15px !important; }
+    }
   </style>
 </head>
-<body>
-  ${escaped}
+<body style="margin:0;padding:0;background-color:#ffffff;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center" style="padding:0;">
+        <table role="presentation" class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto;padding:40px 24px;">
+          <tr>
+            <td>
+              <!-- Email Body -->
+              <div class="text-body" style="font-size:16px;line-height:1.75;color:#1a1a2e;">
+                ${paragraphs}
+              </div>
+
+              <!-- Signature -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;">
+                <tr>
+                  <td style="padding-left:12px;border-left:3px solid #6366f1;">
+                    <p style="margin:0;font-size:15px;font-weight:600;color:#1a1a2e;" class="text-body">
+                      ${escapeHtml(context.senderName)}
+                    </p>
+                    ${context.companyName ? `<p style="margin:2px 0 0;font-size:13px;color:#64748b;" class="text-muted">${escapeHtml(context.companyName)}</p>` : ""}
+                    ${context.fromEmail ? `<p style="margin:2px 0 0;font-size:12px;color:#94a3b8;" class="text-muted">${escapeHtml(context.fromEmail)}</p>` : ""}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Footer -->
+              <hr class="signature-line" style="border:none;border-top:1px solid #e2e8f0;margin:32px 0 16px;" />
+              <p class="footer-text" style="font-size:11px;color:#94a3b8;line-height:1.6;margin:0;">
+                You're receiving this because we thought our solution might be relevant.
+                <a href="${unsubscribeUrl}" style="color:#6366f1;text-decoration:underline;">Unsubscribe</a>
+                or reply "stop" to opt out.
+                ${context.mailingAddress ? `<br>${escapeHtml(context.mailingAddress)}` : ""}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

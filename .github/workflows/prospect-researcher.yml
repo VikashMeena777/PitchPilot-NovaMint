@@ -1,0 +1,19 @@
+name: "Cron: Research Prospects"
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # Every 15 minutes
+  workflow_dispatch: {}
+
+jobs:
+  research-prospects:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger prospect researcher
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/research-prospects" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 180 \
+            --fail \
+            -s -o /dev/null -w "HTTP Status: %{http_code}\n"

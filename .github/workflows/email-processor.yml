@@ -1,0 +1,19 @@
+name: "Cron: Send Queued Emails"
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # Every 5 minutes
+  workflow_dispatch: {}     # Manual trigger
+
+jobs:
+  send-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger email queue processor
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/send-emails" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120 \
+            --fail \
+            -s -o /dev/null -w "HTTP Status: %{http_code}\n"

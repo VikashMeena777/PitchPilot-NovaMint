@@ -1,0 +1,19 @@
+name: "Cron: Process Replies"
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"  # Every 10 minutes
+  workflow_dispatch: {}
+
+jobs:
+  process-replies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reply processor
+        run: |
+          curl -X POST "${{ secrets.APP_URL }}/api/cron/process-replies" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120 \
+            --fail \
+            -s -o /dev/null -w "HTTP Status: %{http_code}\n"

@@ -1,0 +1,28 @@
+name: "Cron: Step Sequences"
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"  # Every 10 minutes
+  workflow_dispatch: {}
+
+jobs:
+  step-sequences:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sequence stepper
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.APP_URL }}/api/cron/step-sequences" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120)
+          
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Cron failed with status $http_code"
+            exit 1
+          fi

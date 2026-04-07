@@ -1,0 +1,28 @@
+name: "Cron: Research Prospects"
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # Every 15 minutes
+  workflow_dispatch: {}
+
+jobs:
+  research-prospects:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger prospect researcher
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.APP_URL }}/api/cron/research-prospects" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120)
+          
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Cron failed with status $http_code"
+            exit 1
+          fi

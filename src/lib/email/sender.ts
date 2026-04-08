@@ -206,7 +206,7 @@ export async function sendBatchEmails(
  * Design: Clean, personal, professional — looks like it came from a real person's email client
  * NOT heavily branded — that kills deliverability for cold outreach
  */
-function formatOutreachHtml(
+export function formatOutreachHtml(
   body: string,
   context: {
     senderName: string;

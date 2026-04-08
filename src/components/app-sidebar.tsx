@@ -94,26 +94,28 @@ export function AppSidebar() {
       className="h-screen sticky top-0 flex flex-col border-r border-[var(--pp-border-subtle)] bg-[var(--pp-bg-deepest)] z-40"
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-16 border-b border-[var(--pp-border-subtle)]">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center flex-shrink-0 shadow-md glow-indigo">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-          </svg>
-        </div>
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.span
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ duration: 0.2 }}
-              className="text-lg font-bold tracking-tight text-[var(--pp-text-primary)] whitespace-nowrap"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              PitchPilot
-            </motion.span>
-          )}
-        </AnimatePresence>
+      <div className="flex items-center h-16 border-b border-[var(--pp-border-subtle)] px-4">
+        <Link href="/" className="flex items-center gap-2.5 cursor-pointer group">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center flex-shrink-0 shadow-md glow-indigo transition-transform duration-200 group-hover:scale-105">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
+            </svg>
+          </div>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.2 }}
+                className="text-lg font-bold tracking-tight text-[var(--pp-text-primary)] whitespace-nowrap"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                PitchPilot
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Link>
       </div>
 
       {/* AI Badge */}

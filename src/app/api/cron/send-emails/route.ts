@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
 
 /**
  * Cron Job: Process Email Queue
@@ -78,7 +79,36 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // ─── Sender Strategy ──────────────────────────────────────
+      const senderName = email.from_name || email.users?.sending_name || "PitchPilot";
+
+      // ─── Wrap in professional HTML template ────────────────────────
+      const { formatOutreachHtml } = await import("@/lib/email/sender");
+
+      // Fetch user profile for template context
+      const { data: userProfile } = await supabase
+        .from("users")
+        .select("company_name, mailing_address, sending_email")
+        .eq("id", email.user_id)
+        .single();
+
+      const rawBody = email.body_text || email.body_html || "";
+      const professionalHtml = formatOutreachHtml(rawBody, {
+        senderName,
+        companyName: (userProfile as Record<string, unknown>)?.company_name as string || "",
+        fromEmail: (userProfile as Record<string, unknown>)?.sending_email as string || email.from_email || "",
+        mailingAddress: (userProfile as Record<string, unknown>)?.mailing_address as string || "",
+      });
+
+      // ─── Generate tracking pixel ──────────────────────────────────
+      const trackingPixelId = randomUUID();
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const trackingPixelUrl = `${appUrl}/api/emails/track/open/${trackingPixelId}`;
+      const trackingPixelTag = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:block;width:1px;height:1px;border:0;" alt="" />`;
+
+      const bodyHtmlWithPixel = professionalHtml.includes("</body>")
+        ? professionalHtml.replace("</body>", `${trackingPixelTag}</body>`)
+        : `${professionalHtml}${trackingPixelTag}`;
+
       const userHasGmail = email.users?.gmail_connected && email.users?.gmail_email;
       let sendResult: { success: boolean; messageId?: string; error?: string };
 
@@ -89,8 +119,8 @@ export async function POST(request: NextRequest) {
           to: email.to_email,
           subject: email.subject,
           body: email.body_text || "",
-          bodyHtml: email.body_html || undefined,
-          senderName: email.from_name || email.users?.sending_name || "PitchPilot",
+          bodyHtml: bodyHtmlWithPixel,
+          senderName,
         });
 
         if (gmailResult.success) {
@@ -109,13 +139,15 @@ export async function POST(request: NextRequest) {
         throw new Error(sendResult.error || "Send failed");
       }
 
-      // Update email status to sent
+      // Update email status to sent + store tracking pixel ID
       await supabase
         .from("emails")
         .update({
           status: "sent",
           sent_at: new Date().toISOString(),
           resend_id: sendResult.messageId || null,
+          tracking_pixel_id: trackingPixelId,
+          body_html: bodyHtmlWithPixel,
         })
         .eq("id", email.id);
 

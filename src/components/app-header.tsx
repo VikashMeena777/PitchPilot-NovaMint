@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Search, Menu, Settings, CreditCard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -79,14 +79,26 @@ export function AppHeader({ onMobileMenuToggle }: { onMobileMenuToggle?: () => v
       {/* Right side */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative text-[var(--pp-text-muted)] hover:text-[var(--pp-text-primary)] transition-colors duration-200 cursor-pointer"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--pp-accent1)] ring-2 ring-[var(--pp-bg-deepest)]" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="relative text-[var(--pp-text-muted)] hover:text-[var(--pp-text-primary)] transition-colors duration-200 cursor-pointer rounded-md p-2 hover:bg-[var(--pp-bg-surface2)] border-none bg-transparent outline-none"
+          >
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--pp-accent1)] ring-2 ring-[var(--pp-bg-deepest)]" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-72 bg-[var(--pp-bg-surface)] border-[var(--pp-border-default)] text-[var(--pp-text-primary)]"
+          >
+            <DropdownMenuLabel className="text-[var(--pp-text-secondary)] text-xs">Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-[var(--pp-border-subtle)]" />
+            <div className="py-6 text-center">
+              <Bell className="w-8 h-8 mx-auto text-[var(--pp-text-muted)] mb-2 opacity-40" />
+              <p className="text-sm text-[var(--pp-text-muted)]">No new notifications</p>
+              <p className="text-xs text-[var(--pp-text-muted)] mt-1 opacity-60">You&apos;re all caught up!</p>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* User menu */}
         <DropdownMenu>
@@ -113,23 +125,24 @@ export function AppHeader({ onMobileMenuToggle }: { onMobileMenuToggle?: () => v
               <p className="text-xs text-[var(--pp-text-muted)]">{user?.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-[var(--pp-border-subtle)]" />
-            <DropdownMenuItem
-              className="cursor-pointer hover:bg-[var(--pp-bg-surface2)]"
-              onClick={() => router.push("/settings")}
-            >
-              Settings
+            <DropdownMenuItem className="cursor-pointer hover:bg-[var(--pp-bg-surface2)] p-0">
+              <Link href="/settings" className="flex items-center gap-2 w-full px-2 py-1.5">
+                <Settings className="w-4 h-4" />
+                Settings
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer hover:bg-[var(--pp-bg-surface2)]"
-              onClick={() => router.push("/billing")}
-            >
-              Billing
+            <DropdownMenuItem className="cursor-pointer hover:bg-[var(--pp-bg-surface2)] p-0">
+              <Link href="/billing" className="flex items-center gap-2 w-full px-2 py-1.5">
+                <CreditCard className="w-4 h-4" />
+                Billing
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-[var(--pp-border-subtle)]" />
             <DropdownMenuItem
               onClick={handleLogout}
               className="cursor-pointer text-red-400 hover:bg-red-500/10 focus:bg-red-500/10"
             >
+              <LogOut className="w-4 h-4 mr-2" />
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

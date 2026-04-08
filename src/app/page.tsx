@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight,
   Sparkles,
@@ -18,8 +19,10 @@ import {
   Check,
   ChevronDown,
   Star,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
 
 /* ━━━ FEATURE CARDS DATA ━━━ */
 const features = [
@@ -165,6 +168,16 @@ function AnimateOnScroll({ children, className = "", delay = 0 }: { children: Re
 
 export default function LandingPage() {
   const heroRef = useRef(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsLoggedIn(!!user);
+    });
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
@@ -201,15 +214,26 @@ export default function LandingPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="ghost" asChild className="text-[var(--pp-text-secondary)] hover:text-[var(--pp-text-primary)] cursor-pointer hidden sm:flex">
-                <Link href="/login">Sign In</Link>
-              </Button>
-              <Button asChild className="bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold cursor-pointer btn-hover glow-indigo transition-all duration-200 text-sm">
-                <Link href="/signup">
-                  Get Started
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button asChild className="bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold cursor-pointer btn-hover glow-indigo transition-all duration-200 text-sm">
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="w-4 h-4 mr-1.5" />
+                    Dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button variant="ghost" asChild className="text-[var(--pp-text-secondary)] hover:text-[var(--pp-text-primary)] cursor-pointer hidden sm:flex">
+                    <Link href="/login">Sign In</Link>
+                  </Button>
+                  <Button asChild className="bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold cursor-pointer btn-hover glow-indigo transition-all duration-200 text-sm">
+                    <Link href="/signup">
+                      Get Started
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -269,9 +293,18 @@ export default function LandingPage() {
               size="lg"
               className="h-13 px-8 bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold text-base cursor-pointer btn-hover glow-indigo-strong transition-all duration-200"
             >
-              <Link href="/signup">
-                Start Free — No Card Required
-                <ArrowRight className="w-5 h-5 ml-2" />
+              <Link href={isLoggedIn ? "/dashboard" : "/signup"}>
+                {isLoggedIn ? (
+                  <>
+                    <LayoutDashboard className="w-5 h-5 mr-2" />
+                    Go to Dashboard
+                  </>
+                ) : (
+                  <>
+                    Start Free — No Card Required
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </>
+                )}
               </Link>
             </Button>
             <Button
@@ -561,7 +594,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-6 text-sm text-[var(--pp-text-muted)]">
               <Link href="/terms" className="hover:text-[var(--pp-text-primary)] transition-colors cursor-pointer">Terms</Link>
               <Link href="/privacy" className="hover:text-[var(--pp-text-primary)] transition-colors cursor-pointer">Privacy</Link>
-              <a href="mailto:support@pitchpilot.ai" className="hover:text-[var(--pp-text-primary)] transition-colors cursor-pointer">Contact</a>
+              <Link href="/contact" className="hover:text-[var(--pp-text-primary)] transition-colors cursor-pointer">Contact</Link>
             </div>
             <p className="text-xs text-[var(--pp-text-muted)]">
               © {new Date().getFullYear()} PitchPilot. All rights reserved.

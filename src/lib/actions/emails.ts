@@ -1,9 +1,10 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email/sender";
+import { sendEmail, formatOutreachHtml } from "@/lib/email/sender";
 import { sendViaGmail } from "@/lib/email/gmail";
 import { logActivity } from "@/lib/utils/activity-logger";
+import { randomUUID } from "crypto";
 
 /**
  * Send a single email to a prospect and track it in the database.
@@ -44,6 +45,29 @@ export async function sendProspectEmail(params: {
 
   const senderName = profile?.sending_name || profile?.full_name || "PitchPilot User";
   const userEmail = profile?.sending_email || user.email;
+  const companyName = (profile as Record<string, unknown>)?.company_name as string || "";
+  const mailingAddress = (profile as Record<string, unknown>)?.mailing_address as string || "";
+
+  // ─── Build professional HTML template ────────────────────────
+  // The editor body is raw HTML — we wrap it in our premium email
+  // template so it looks polished regardless of Gmail vs Resend
+  const professionalHtml = formatOutreachHtml(params.body, {
+    senderName,
+    companyName,
+    fromEmail: userEmail || "",
+    mailingAddress,
+  });
+
+  // ─── Generate tracking pixel ─────────────────────────────────
+  const trackingPixelId = randomUUID();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const trackingPixelUrl = `${appUrl}/api/emails/track/open/${trackingPixelId}`;
+  const trackingPixelTag = `<img src="${trackingPixelUrl}" width="1" height="1" style="display:block;width:1px;height:1px;border:0;" alt="" />`;
+
+  // Inject tracking pixel into the professional HTML
+  const bodyWithTracking = professionalHtml.includes("</body>")
+    ? professionalHtml.replace("</body>", `${trackingPixelTag}</body>`)
+    : `${professionalHtml}${trackingPixelTag}`;
 
   let sendResult: { success: boolean; messageId?: string; error?: string };
   let sentViaGmail = false;
@@ -53,8 +77,8 @@ export async function sendProspectEmail(params: {
     const gmailResult = await sendViaGmail(user.id, {
       to: prospect.email,
       subject: params.subject,
-      body: params.body,
-      bodyHtml: params.body, // body already contains HTML from the editor
+      body: bodyWithTracking,
+      bodyHtml: bodyWithTracking,
       senderName,
       replyTo: userEmail,
     });
@@ -65,18 +89,18 @@ export async function sendProspectEmail(params: {
     } else {
       // Gmail failed — fall through to Resend as backup
       console.warn(`[Email] Gmail send failed, falling back to Resend: ${gmailResult.error}`);
-      sendResult = await sendViaResend(prospect.email, senderName, userEmail, params, profile, user.id);
+      sendResult = await sendViaResend(prospect.email, senderName, userEmail, { ...params, body: bodyWithTracking }, profile, user.id);
     }
   } else {
     // ─── Strategy 2: Resend (default) ─────────────────────────────
-    sendResult = await sendViaResend(prospect.email, senderName, userEmail, params, profile, user.id);
+    sendResult = await sendViaResend(prospect.email, senderName, userEmail, { ...params, body: bodyWithTracking }, profile, user.id);
   }
 
   if (!sendResult.success) {
     return { success: false, error: sendResult.error || "Send failed" };
   }
 
-  // Record email in database
+  // Record email in database — with tracking pixel ID
   await supabase.from("emails").insert({
     user_id: user.id,
     prospect_id: params.prospectId,
@@ -84,11 +108,12 @@ export async function sendProspectEmail(params: {
     sequence_id: params.sequenceId || null,
     sequence_step_id: params.sequenceStepId || null,
     subject: params.subject,
-    body_html: params.body,
+    body_html: bodyWithTracking,
     body_text: params.body.replace(/<[^>]*>/g, ""),
     status: "sent",
     sent_at: new Date().toISOString(),
     resend_id: sendResult.messageId || null,
+    tracking_pixel_id: trackingPixelId,
   });
 
   // Update prospect email count

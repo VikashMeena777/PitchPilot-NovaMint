@@ -121,6 +121,31 @@ export async function POST(request: NextRequest) {
         const bodyHtml = generated?.body_html || nextStep.body_template || "";
         const bodyText = generated?.body || nextStep.body_template || "";
 
+        // ─── A/B Test Variant Selection ─────────────────────────────
+        let finalSubject = subject;
+        let finalBodyHtml = bodyHtml;
+        let finalBodyText = bodyText;
+        let abVariant: "A" | "B" | null = null;
+
+        const abTest = nextStep.ab_test as { enabled?: boolean; subject_b?: string; body_b?: string } | null;
+        if (abTest?.enabled) {
+          // Import deterministic variant assignment
+          const { getABVariant, recordABResult } = await import("@/lib/actions/ab-testing");
+          abVariant = await getABVariant(prospect.id);
+
+          if (abVariant === "B") {
+            // Use variant B content
+            if (abTest.subject_b) finalSubject = abTest.subject_b;
+            if (abTest.body_b) {
+              finalBodyHtml = abTest.body_b;
+              finalBodyText = abTest.body_b;
+            }
+          }
+
+          // Record the send for A/B tracking
+          await recordABResult(nextStep.id, abVariant, "send", supabase);
+        }
+
         // Add random jitter (0-30 min delay)
         const jitterMs = Math.floor(Math.random() * 30 * 60 * 1000);
         const scheduledAt = new Date(Date.now() + jitterMs).toISOString();
@@ -135,11 +160,12 @@ export async function POST(request: NextRequest) {
           from_email: user.sending_email,
           from_name: user.sending_name,
           to_email: prospect.email,
-          subject,
-          body_html: bodyHtml,
-          body_text: bodyText,
+          subject: finalSubject,
+          body_html: finalBodyHtml,
+          body_text: finalBodyText,
           status: "queued",
           scheduled_at: scheduledAt,
+          ...(abVariant ? { metadata: { ab_variant: abVariant } } : {}),
         });
 
         emailsQueued++;

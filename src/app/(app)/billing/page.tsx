@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { PLANS, type PlanId, type PlanDetails } from "@/lib/billing/plans";
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import Script from "next/script";
 
 const PLAN_ICONS: Record<PlanId, typeof Rocket> = {
   free: Zap,
@@ -50,24 +51,48 @@ function BillingPageContent() {
   const [subscriptionId, setSubscriptionId] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cashfreeReady, setCashfreeReady] = useState(false);
 
   // Check for return from Cashfree checkout
   useEffect(() => {
     const status = searchParams.get("status");
     const plan = searchParams.get("plan");
+    const orderId = searchParams.get("order_id");
+
     if (status === "success" && plan) {
       toast.success(`Welcome to ${PLANS[plan as PlanId]?.name || plan}!`, {
-        description: "Your subscription is being activated...",
+        description: "Your payment is being processed. Your plan will be activated shortly.",
       });
+      // Verify the order status
+      if (orderId) {
+        verifyOrder(orderId, plan);
+      }
     }
   }, [searchParams]);
+
+  // Verify order and activate plan immediately (don't wait for webhook in sandbox)
+  async function verifyOrder(orderId: string, planId: string) {
+    try {
+      const res = await fetch(`/api/billing/verify-order?orderId=${orderId}&planId=${planId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.activated) {
+          setCurrentPlan(data.plan);
+          setExpiresAt(data.expiresAt);
+          toast.success(`${PLANS[data.plan as PlanId]?.name} plan activated!`);
+        }
+      }
+    } catch {
+      // Silent — webhook will handle it
+    }
+  }
 
   // Fetch current subscription
   useEffect(() => {
     fetchSubscription();
   }, []);
 
-  async function fetchSubscription() {
+  const fetchSubscription = useCallback(async () => {
     try {
       const res = await fetch("/api/billing/manage");
       if (res.ok) {
@@ -81,7 +106,7 @@ function BillingPageContent() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
   async function handleUpgrade(planId: PlanId) {
     if (planId === "free" || planId === currentPlan) return;
@@ -96,11 +121,39 @@ function BillingPageContent() {
 
       const data = await res.json();
 
-      if (data.authLink) {
-        window.location.href = data.authLink;
-      } else {
-        toast.error(data.error || "Failed to create subscription");
+      if (!res.ok) {
+        toast.error(data.error || "Failed to create order");
+        return;
       }
+
+      if (data.paymentSessionId && cashfreeReady) {
+        // Use Cashfree JS SDK checkout
+        const cashfree = (window as unknown as Record<string, unknown>).Cashfree as {
+          checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<{ error?: { message: string }; paymentDetails?: unknown }>;
+        };
+
+        if (cashfree) {
+          const checkoutResult = await cashfree.checkout({
+            paymentSessionId: data.paymentSessionId,
+            redirectTarget: "_self",
+          });
+
+          if (checkoutResult?.error) {
+            toast.error(checkoutResult.error.message || "Payment failed");
+          }
+          // On success, Cashfree will redirect to return_url
+          return;
+        }
+      }
+
+      // Fallback: If Cashfree SDK not loaded, redirect to payment link
+      if (data.paymentLink) {
+        window.location.href = data.paymentLink;
+        return;
+      }
+
+      // If neither SDK nor link works, show manual flow
+      toast.error("Payment gateway is loading. Please try again in a moment.");
     } catch (err) {
       console.error("Upgrade error:", err);
       toast.error("Something went wrong. Please try again.");
@@ -110,19 +163,19 @@ function BillingPageContent() {
   }
 
   async function handleCancel() {
-    if (!confirm("Are you sure you want to cancel your subscription? You'll be downgraded to the Free plan.")) return;
+    if (!confirm("Are you sure you want to cancel? You'll be downgraded to the Free plan immediately.")) return;
 
     setIsCancelling(true);
     try {
       const res = await fetch("/api/billing/manage", { method: "POST" });
       if (res.ok) {
-        toast.success("Subscription cancelled. You're now on the Free plan.");
+        toast.success("Plan cancelled. You're now on the Free plan.");
         setCurrentPlan("free");
         setSubscriptionId(null);
         setExpiresAt(null);
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to cancel subscription");
+        toast.error(data.error || "Failed to cancel plan");
       }
     } catch {
       toast.error("Something went wrong.");
@@ -134,158 +187,177 @@ function BillingPageContent() {
   const planOrder: PlanId[] = ["free", "starter", "growth", "agency"];
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-8 p-6 md:p-8 max-w-6xl mx-auto"
-    >
-      {/* Header */}
-      <div>
-        <h1
-          className="text-2xl font-bold text-[var(--pp-text-primary)]"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Billing & Plans
-        </h1>
-        <p className="text-sm text-[var(--pp-text-secondary)] mt-1">
-          Manage your subscription and unlock more power
-        </p>
-      </div>
+    <>
+      {/* Load Cashfree JS SDK */}
+      <Script
+        src="https://sdk.cashfree.com/js/v3/cashfree.js"
+        onLoad={() => {
+          // Initialize Cashfree SDK
+          const CashfreeLib = (window as unknown as Record<string, unknown>).Cashfree as {
+            init: (opts: { mode: string }) => void;
+          } | undefined;
+          if (CashfreeLib) {
+            const env = process.env.NEXT_PUBLIC_CASHFREE_ENV === "production" ? "production" : "sandbox";
+            CashfreeLib.init({ mode: env });
+            setCashfreeReady(true);
+          }
+        }}
+        strategy="lazyOnload"
+      />
 
-      {/* Current Plan Banner */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="relative overflow-hidden rounded-2xl border border-[var(--pp-border-subtle)] bg-gradient-to-br from-[var(--pp-bg-surface)] to-[var(--pp-accent1)]/5 p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="space-y-8 p-6 md:p-8 max-w-6xl mx-auto"
       >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[var(--pp-accent1)]/10 flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-[var(--pp-accent1)]" />
-            </div>
-            <div>
-              <p className="text-xs text-[var(--pp-text-tertiary)] uppercase tracking-wider font-medium">
-                Current Plan
-              </p>
-              <p className="text-xl font-bold text-[var(--pp-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
-                {isLoading ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Loading...
-                  </span>
-                ) : (
-                  PLANS[currentPlan as PlanId]?.name || "Free"
-                )}
-              </p>
-              {expiresAt && (
-                <p className="text-xs text-[var(--pp-text-tertiary)] mt-1">
-                  Renews on {new Date(expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
-                </p>
-              )}
-            </div>
-          </div>
-          {currentPlan !== "free" && subscriptionId && (
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isCancelling}
-              className="border-red-500/30 text-red-400 hover:bg-red-500/10 cursor-pointer"
-            >
-              {isCancelling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
-              Cancel Subscription
-            </Button>
-          )}
+        {/* Header */}
+        <div>
+          <h1
+            className="text-2xl font-bold text-[var(--pp-text-primary)]"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Billing & Plans
+          </h1>
+          <p className="text-sm text-[var(--pp-text-secondary)] mt-1">
+            Choose a plan and pay securely via Cashfree
+          </p>
         </div>
 
-        {/* Decorative gradient orb */}
-        <div className="absolute -top-12 -right-12 w-40 h-40 bg-[var(--pp-accent1)]/5 rounded-full blur-3xl pointer-events-none" />
-      </motion.div>
-
-      {/* Plan Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {planOrder.map((planId, i) => {
-          const plan = PLANS[planId];
-          const Icon = PLAN_ICONS[planId];
-          const isCurrentPlan = currentPlan === planId;
-          const isUpgrade = planOrder.indexOf(planId) > planOrder.indexOf(currentPlan as PlanId);
-
-          return (
-            <PlanCard
-              key={planId}
-              plan={plan}
-              icon={Icon}
-              gradient={PLAN_GRADIENTS[planId]}
-              isCurrentPlan={isCurrentPlan}
-              isUpgrade={isUpgrade}
-              isUpgrading={upgradingPlan === planId}
-              onUpgrade={() => handleUpgrade(planId)}
-              delay={i * 0.08}
-            />
-          );
-        })}
-      </div>
-
-      {/* Trust badges */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.5 }}
-        className="flex flex-wrap items-center justify-center gap-6 pt-4 pb-2"
-      >
-        {[
-          { icon: Shield, text: "Secure Payments via Cashfree" },
-          { icon: Star, text: "Cancel Anytime" },
-          { icon: Sparkles, text: "7-Day Free Trial on Starter" },
-        ].map((badge, i) => (
-          <div key={i} className="flex items-center gap-2 text-xs text-[var(--pp-text-tertiary)]">
-            <badge.icon className="w-3.5 h-3.5 text-[var(--pp-accent1)]/60" />
-            {badge.text}
-          </div>
-        ))}
-      </motion.div>
-
-      {/* FAQ Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-        className="max-w-2xl mx-auto space-y-4 pt-4"
-      >
-        <h2
-          className="text-lg font-semibold text-[var(--pp-text-primary)] text-center"
-          style={{ fontFamily: "var(--font-display)" }}
+        {/* Current Plan Banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="relative overflow-hidden rounded-2xl border border-[var(--pp-border-subtle)] bg-gradient-to-br from-[var(--pp-bg-surface)] to-[var(--pp-accent1)]/5 p-6"
         >
-          Frequently Asked Questions
-        </h2>
-        {[
-          {
-            q: "Can I change plans later?",
-            a: "Yes! You can upgrade or downgrade anytime. Changes take effect immediately.",
-          },
-          {
-            q: "What happens when I hit my limit?",
-            a: "You'll be notified and can upgrade. Existing sequences will pause until limits are resolved.",
-          },
-          {
-            q: "Is there a refund policy?",
-            a: "We offer a full refund within 48 hours of your first payment if you're not satisfied.",
-          },
-          {
-            q: "Do you support UPI, cards, and net banking?",
-            a: "Yes, all payment methods supported by Cashfree are available — UPI, credit/debit cards, net banking, and wallets.",
-          },
-        ].map((faq, i) => (
-          <div
-            key={i}
-            className="p-4 rounded-xl bg-[var(--pp-bg-surface)] border border-[var(--pp-border-subtle)]"
-          >
-            <p className="text-sm font-medium text-[var(--pp-text-primary)]">{faq.q}</p>
-            <p className="text-xs text-[var(--pp-text-secondary)] mt-1">{faq.a}</p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[var(--pp-accent1)]/10 flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-[var(--pp-accent1)]" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--pp-text-tertiary)] uppercase tracking-wider font-medium">
+                  Current Plan
+                </p>
+                <p className="text-xl font-bold text-[var(--pp-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
+                  {isLoading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+                    </span>
+                  ) : (
+                    PLANS[currentPlan as PlanId]?.name || "Free"
+                  )}
+                </p>
+                {expiresAt && (
+                  <p className="text-xs text-[var(--pp-text-tertiary)] mt-1">
+                    Valid until {new Date(expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                )}
+              </div>
+            </div>
+            {currentPlan !== "free" && (
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isCancelling}
+                className="border-red-500/30 text-red-400 hover:bg-red-500/10 cursor-pointer"
+              >
+                {isCancelling ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                Cancel Plan
+              </Button>
+            )}
           </div>
-        ))}
+
+          {/* Decorative gradient orb */}
+          <div className="absolute -top-12 -right-12 w-40 h-40 bg-[var(--pp-accent1)]/5 rounded-full blur-3xl pointer-events-none" />
+        </motion.div>
+
+        {/* Plan Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {planOrder.map((planId, i) => {
+            const plan = PLANS[planId];
+            const Icon = PLAN_ICONS[planId];
+            const isCurrentPlan = currentPlan === planId;
+            const isUpgrade = planOrder.indexOf(planId) > planOrder.indexOf(currentPlan as PlanId);
+
+            return (
+              <PlanCard
+                key={planId}
+                plan={plan}
+                icon={Icon}
+                gradient={PLAN_GRADIENTS[planId]}
+                isCurrentPlan={isCurrentPlan}
+                isUpgrade={isUpgrade}
+                isUpgrading={upgradingPlan === planId}
+                onUpgrade={() => handleUpgrade(planId)}
+                delay={i * 0.08}
+              />
+            );
+          })}
+        </div>
+
+        {/* Trust badges */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="flex flex-wrap items-center justify-center gap-6 pt-4 pb-2"
+        >
+          {[
+            { icon: Shield, text: "Secure Payments via Cashfree" },
+            { icon: Star, text: "UPI, Cards, NetBanking" },
+            { icon: Sparkles, text: "Instant Activation" },
+          ].map((badge, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs text-[var(--pp-text-tertiary)]">
+              <badge.icon className="w-3.5 h-3.5 text-[var(--pp-accent1)]/60" />
+              {badge.text}
+            </div>
+          ))}
+        </motion.div>
+
+        {/* FAQ Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="max-w-2xl mx-auto space-y-4 pt-4"
+        >
+          <h2
+            className="text-lg font-semibold text-[var(--pp-text-primary)] text-center"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Frequently Asked Questions
+          </h2>
+          {[
+            {
+              q: "Can I change plans later?",
+              a: "Yes! You can upgrade or downgrade anytime. Changes take effect immediately.",
+            },
+            {
+              q: "What happens when I hit my limit?",
+              a: "You'll be notified and can upgrade. Existing sequences will pause until limits are resolved.",
+            },
+            {
+              q: "Is there a refund policy?",
+              a: "We offer a full refund within 48 hours of your first payment if you're not satisfied.",
+            },
+            {
+              q: "Do you support UPI, cards, and net banking?",
+              a: "Yes, all payment methods supported by Cashfree are available — UPI, credit/debit cards, net banking, and wallets.",
+            },
+          ].map((faq, i) => (
+            <div
+              key={i}
+              className="p-4 rounded-xl bg-[var(--pp-bg-surface)] border border-[var(--pp-border-subtle)]"
+            >
+              <p className="text-sm font-medium text-[var(--pp-text-primary)]">{faq.q}</p>
+              <p className="text-xs text-[var(--pp-text-secondary)] mt-1">{faq.a}</p>
+            </div>
+          ))}
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   );
 }
 
@@ -360,12 +432,6 @@ function PlanCard({
           )}
         </div>
 
-        {plan.trialDays > 0 && (
-          <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-[var(--pp-accent1)] bg-[var(--pp-accent1)]/10 px-2 py-0.5 rounded-full">
-            <Sparkles className="w-3 h-3" /> {plan.trialDays}-day free trial
-          </div>
-        )}
-
         <p className="text-xs text-[var(--pp-text-secondary)] mt-2 line-clamp-2">
           {plan.description}
         </p>
@@ -417,7 +483,7 @@ function PlanCard({
             ) : (
               <ArrowRight className="w-4 h-4 mr-1" />
             )}
-            {plan.trialDays > 0 ? "Start Free Trial" : "Upgrade"}
+            Buy Plan
           </Button>
         ) : (
           <Button

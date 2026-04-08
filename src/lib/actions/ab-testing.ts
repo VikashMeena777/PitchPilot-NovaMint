@@ -61,7 +61,7 @@ export async function createABTest(
 }
 
 // ── Get variant for a prospect (deterministic assignment) ──
-export function getABVariant(prospectId: string): "A" | "B" {
+export async function getABVariant(prospectId: string): Promise<"A" | "B"> {
   // Simple hash-based assignment for deterministic split
   let hash = 0;
   for (let i = 0; i < prospectId.length; i++) {
@@ -76,9 +76,12 @@ export function getABVariant(prospectId: string): "A" | "B" {
 export async function recordABResult(
   sequenceStepId: string,
   variant: "A" | "B",
-  event: "send" | "open" | "reply"
+  event: "send" | "open" | "reply",
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  externalSupabase?: any
 ) {
-  const supabase = await createClient();
+  // Use external client (e.g., service-role from cron) or create server client
+  const supabase = externalSupabase || await createClient();
   if (!supabase) return;
 
   const { data: step } = await supabase

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { verifyWebhookSignature, logBillingEvent } from "@/lib/billing/cashfree";
-
-// Map Cashfree plan IDs back to our internal plan names
-const CASHFREE_TO_PLAN: Record<string, string> = {
-  pitchpilot_starter_monthly: "starter",
-  pitchpilot_growth_monthly: "growth",
-  pitchpilot_agency_monthly: "agency",
-};
+import { verifyWebhookSignature, logBillingEvent, getOrderStatus } from "@/lib/billing/cashfree";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +8,7 @@ export async function POST(request: NextRequest) {
     const timestamp = request.headers.get("x-cashfree-timestamp") || "";
     const signature = request.headers.get("x-cashfree-signature") || "";
 
-    // Verify webhook signature
+    // Verify webhook signature (skip if no signature — sandbox may not send one)
     if (signature && !verifyWebhookSignature(rawBody, timestamp, signature)) {
       console.error("[Webhook] Invalid signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
@@ -23,16 +16,8 @@ export async function POST(request: NextRequest) {
 
     const event = JSON.parse(rawBody);
     const eventType = event.type || event.event;
-    const subscriptionId =
-      event.data?.subscription?.subscription_id ||
-      event.data?.subscription_id ||
-      "";
-    const planId =
-      event.data?.subscription?.plan_details?.plan_id ||
-      event.data?.plan_id ||
-      "";
 
-    console.log(`[Webhook] Received: ${eventType} for ${subscriptionId}`);
+    console.log(`[Webhook] Received event: ${eventType}`, JSON.stringify(event.data || {}).slice(0, 500));
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -44,73 +29,86 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Find user by subscription ID
+    // Extract order info from the webhook payload
+    const orderId =
+      event.data?.order?.order_id ||
+      event.data?.order_id ||
+      "";
+    const orderNote = event.data?.order?.order_note || "";
+    const orderTags = event.data?.order?.order_tags || {};
+    const paymentStatus =
+      event.data?.payment?.payment_status ||
+      event.data?.order?.order_status ||
+      "";
+
+    // Extract plan from order tags or note
+    let planId = orderTags.plan_id || "";
+    if (!planId && orderNote) {
+      // Parse from note like "PitchPilot starter plan purchase"
+      const match = orderNote.match(/PitchPilot (\w+) plan/);
+      if (match) planId = match[1];
+    }
+    // Also try extracting from order_id format: pp_starter_1234567890
+    if (!planId && orderId) {
+      const match = orderId.match(/^pp_(\w+)_/);
+      if (match) planId = match[1];
+    }
+
+    // Find user by their stored order/subscription ID
     const { data: user } = await supabase
       .from("users")
       .select("id, plan")
-      .eq("cashfree_subscription_id", subscriptionId)
+      .eq("cashfree_subscription_id", orderId)
       .single();
 
     switch (eventType) {
-      case "SUBSCRIPTION_ACTIVATED":
-      case "SUBSCRIPTION_STATUS_CHANGE": {
-        const status = event.data?.subscription?.subscription_status;
-        if (status === "ACTIVE" && user) {
-          const internalPlan = CASHFREE_TO_PLAN[planId] || "starter";
-          const expiresAt = event.data?.subscription?.subscription_expiry_time;
+      case "PAYMENT_SUCCESS_WEBHOOK":
+      case "ORDER_PAID": {
+        if (user && planId) {
+          // Calculate expiry (30 days for monthly plans)
+          const expiresAt = new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000
+          ).toISOString();
 
           await supabase
             .from("users")
             .update({
-              plan: internalPlan,
-              plan_expires_at: expiresAt || null,
+              plan: planId,
+              plan_expires_at: expiresAt,
             })
             .eq("id", user.id);
 
-          console.log(`[Webhook] User ${user.id} upgraded to ${internalPlan}`);
+          console.log(`[Webhook] User ${user.id} upgraded to ${planId} (expires: ${expiresAt})`);
+        } else {
+          console.warn(`[Webhook] Payment success but no user found for order: ${orderId}`);
         }
         break;
       }
 
-      case "SUBSCRIPTION_PAYMENT_SUCCESS": {
+      case "PAYMENT_FAILED_WEBHOOK":
+      case "ORDER_FAILED": {
         if (user) {
-          const internalPlan = CASHFREE_TO_PLAN[planId] || user.plan;
-          const expiresAt = event.data?.subscription?.subscription_expiry_time;
-
+          console.warn(`[Webhook] Payment failed for user ${user.id}, order: ${orderId}`);
+          // Clear the pending order reference
           await supabase
             .from("users")
             .update({
-              plan: internalPlan,
-              plan_expires_at: expiresAt || null,
-            })
-            .eq("id", user.id);
-
-          console.log(`[Webhook] Payment success for user ${user.id}`);
-        }
-        break;
-      }
-
-      case "SUBSCRIPTION_CANCELLED":
-      case "SUBSCRIPTION_COMPLETED": {
-        if (user) {
-          await supabase
-            .from("users")
-            .update({
-              plan: "free",
               cashfree_subscription_id: null,
-              plan_expires_at: null,
             })
             .eq("id", user.id);
-
-          console.log(`[Webhook] User ${user.id} downgraded to free`);
         }
         break;
       }
 
-      case "PAYMENT_FAILURE": {
+      case "PAYMENT_USER_DROPPED_WEBHOOK": {
         if (user) {
-          console.warn(`[Webhook] Payment failed for user ${user.id}`);
-          // Don't immediately downgrade — give a grace period
+          console.warn(`[Webhook] User ${user.id} dropped payment for order: ${orderId}`);
+          await supabase
+            .from("users")
+            .update({
+              cashfree_subscription_id: null,
+            })
+            .eq("id", user.id);
         }
         break;
       }
@@ -119,11 +117,11 @@ export async function POST(request: NextRequest) {
         console.log(`[Webhook] Unhandled event: ${eventType}`);
     }
 
-    // Log event
+    // Log billing event
     await logBillingEvent({
       userId: user?.id,
       eventType,
-      subscriptionId,
+      subscriptionId: orderId,
       payload: event.data || {},
     });
 

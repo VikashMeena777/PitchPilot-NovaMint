@@ -1,0 +1,104 @@
+﻿
+> pitchpilot@0.1.0 build
+> next build
+
+node.exe : ΓÜá Warning: Next.js inferred your 
+workspace root, but it may not be correct.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜ 
+   á Warning: Ne...not be correct.:String) [],  
+   RemoteException
+    + FullyQualifiedErrorId : NativeCommandErro 
+   r
+ 
+ We detected multiple lockfiles and selected 
+the directory of C:\Users\Vikash 
+Meena\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` 
+in your Next.js config, or consider removing 
+one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference
+/config/next-config-js/turbopack#root-directory 
+for more information.
+ Detected additional lockfiles: 
+   * C:\Users\Vikash Meena\Desktop\Automations\1
+9-PitchPilot\pitchpilot\package-lock.json
+
+Γû▓ Next.js 16.2.2 (Turbopack)
+- Environments: .env.local
+
+ΓÜá The "middleware" file convention is 
+deprecated. Please use "proxy" instead. Learn 
+more: https://nextjs.org/docs/messages/middlewar
+e-to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 15.2s
+  Running TypeScript ...
+  Finished TypeScript in 13.3s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/45) ...
+  Generating static pages using 7 workers (11/45) 
+  Generating static pages using 7 workers (22/45) 
+  Generating static pages using 7 workers (33/45) 
+Γ£ô Generating static pages using 7 workers (45/45) in 1147ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /analytics
+Γö£ ╞Æ /api/activity
+Γö£ ╞Æ /api/auth/gmail
+Γö£ ╞Æ /api/auth/gmail/callback
+Γö£ ╞Æ /api/auth/gmail/disconnect
+Γö£ ╞Æ /api/billing/create-subscription
+Γö£ ╞Æ /api/billing/manage
+Γö£ ╞Æ /api/billing/verify-order
+Γö£ ╞Æ /api/billing/webhook
+Γö£ ╞Æ /api/cron/daily-analytics
+Γö£ ╞Æ /api/cron/process-bounces
+Γö£ ╞Æ /api/cron/process-replies
+Γö£ ╞Æ /api/cron/research-prospects
+Γö£ ╞Æ /api/cron/send-emails
+Γö£ ╞Æ /api/cron/step-sequences
+Γö£ ╞Æ /api/emails/check
+Γö£ ╞Æ /api/emails/domain-check
+Γö£ ╞Æ /api/emails/health
+Γö£ ╞Æ /api/emails/test
+Γö£ ╞Æ /api/emails/track/click
+Γö£ ╞Æ /api/emails/track/open/[pixelId]
+Γö£ ╞Æ /api/emails/unsubscribe
+Γö£ ╞Æ /api/prospects/bulk
+Γö£ ╞Æ /api/prospects/enrich
+Γö£ ╞Æ /api/prospects/import
+Γö£ ╞Æ /api/sequences/[id]/analytics
+Γö£ ╞Æ /api/user/delete-data
+Γö£ ╞Æ /api/webhooks/inbound
+Γö£ ╞Æ /api/webhooks/resend
+Γö£ ╞Æ /auth/callback
+Γö£ Γùï /billing
+Γö£ Γùï /contact
+Γö£ Γùï /dashboard
+Γö£ Γùï /emails
+Γö£ Γùï /login
+Γö£ Γùï /onboarding
+Γö£ Γùï /privacy
+Γö£ Γùï /prospects
+Γö£ ╞Æ /prospects/[id]
+Γö£ Γùï /sequences
+Γö£ ╞Æ /sequences/[id]
+Γö£ Γùï /settings
+Γö£ Γùï /signup
+Γö£ Γùï /templates
+Γöö Γùï /terms
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

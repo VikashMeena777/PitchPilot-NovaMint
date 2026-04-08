@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createSubscription } from "@/lib/billing/cashfree";
+import { createOrder } from "@/lib/billing/cashfree";
 import { PLANS, type PlanId } from "@/lib/billing/plans";
-import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,9 +26,9 @@ export async function POST(request: NextRequest) {
 
     const plan = PLANS[planId as PlanId];
 
-    if (!plan.cashfreePlanId) {
+    if (plan.price === 0) {
       return NextResponse.json(
-        { error: "Cannot create subscription for free plan" },
+        { error: "Cannot purchase free plan" },
         { status: 400 }
       );
     }
@@ -41,42 +40,72 @@ export async function POST(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    const subscriptionId = `pp_${planId}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+    const orderId = `pp_${planId}_${Date.now()}`;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const result = await createSubscription({
-      subscriptionId,
-      planId: plan.cashfreePlanId,
-      customerName: profile?.full_name || user.email?.split("@")[0] || "User",
+    console.log(`[Billing] Creating order for user ${user.id}, plan: ${planId}, amount: ${plan.price}`);
+
+    const result = await createOrder({
+      orderId,
+      orderAmount: plan.price,
+      customerName: (profile as { full_name?: string })?.full_name || user.email?.split("@")[0] || "User",
       customerEmail: user.email || "",
-      customerPhone: "9999999999", // Cashfree requires phone; user can update later
+      customerPhone: "9999999999",
       returnUrl: `${appUrl}/billing?status=success&plan=${planId}`,
-      trialDays: plan.trialDays > 0 ? plan.trialDays : undefined,
+      planId,
     });
 
-    if (result.subscription_id) {
-      // Store pending subscription
+    // Cashfree returns payment_session_id for the checkout
+    if (result.payment_session_id) {
+      // Store pending order reference
       await supabase
         .from("users")
         .update({
-          cashfree_subscription_id: result.subscription_id,
+          cashfree_subscription_id: orderId,
         })
         .eq("id", user.id);
 
       return NextResponse.json({
-        subscriptionId: result.subscription_id,
-        authLink: result.data?.authorization?.authorization_link || result.data?.subscription_url,
-        status: result.subscription_status,
+        orderId: result.order_id || orderId,
+        paymentSessionId: result.payment_session_id,
+        orderStatus: result.order_status,
+        // Cashfree creates a payment link automatically
+        paymentLink: result.payment_link,
+        // Environment for frontend SDK
+        environment: process.env.CASHFREE_ENVIRONMENT || "sandbox",
       });
     }
 
-    console.error("[Billing] Cashfree error:", result);
+    // If there's an order_id but no session (sometimes Cashfree returns differently)
+    if (result.order_id) {
+      await supabase
+        .from("users")
+        .update({
+          cashfree_subscription_id: result.order_id,
+        })
+        .eq("id", user.id);
+
+      return NextResponse.json({
+        orderId: result.order_id,
+        paymentSessionId: result.payment_session_id,
+        orderStatus: result.order_status,
+        paymentLink: result.payment_link,
+        environment: process.env.CASHFREE_ENVIRONMENT || "sandbox",
+      });
+    }
+
+    console.error("[Billing] Cashfree order error:", JSON.stringify(result));
     return NextResponse.json(
-      { error: result.message || "Failed to create subscription" },
+      {
+        error:
+          result.message ||
+          result.error?.message ||
+          "Failed to create order. Please try again.",
+      },
       { status: 500 }
     );
   } catch (error) {
-    console.error("[Billing] Create subscription error:", error);
+    console.error("[Billing] Create order error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getSubscription, cancelSubscription } from "@/lib/billing/cashfree";
+import { getOrderStatus } from "@/lib/billing/cashfree";
 
-// GET — Get current subscription status
+// GET — Get current plan/billing status
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -28,25 +28,50 @@ export async function GET() {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    let subscriptionDetails = null;
-    if (profile.cashfree_subscription_id) {
+    // Check if plan has expired
+    const typedProfile = profile as {
+      plan: string;
+      cashfree_subscription_id: string | null;
+      plan_expires_at: string | null;
+    };
+
+    let currentPlan = typedProfile.plan || "free";
+
+    if (
+      typedProfile.plan_expires_at &&
+      new Date(typedProfile.plan_expires_at) < new Date() &&
+      currentPlan !== "free"
+    ) {
+      // Plan expired — downgrade to free
+      await supabase
+        .from("users")
+        .update({
+          plan: "free",
+          cashfree_subscription_id: null,
+          plan_expires_at: null,
+        })
+        .eq("id", user.id);
+
+      currentPlan = "free";
+    }
+
+    let orderInfo = null;
+    if (typedProfile.cashfree_subscription_id) {
       try {
-        subscriptionDetails = await getSubscription(
-          profile.cashfree_subscription_id
-        );
+        orderInfo = await getOrderStatus(typedProfile.cashfree_subscription_id);
       } catch {
-        console.warn("[Billing] Could not fetch Cashfree subscription details");
+        // Silent fail — order lookup is optional
       }
     }
 
     return NextResponse.json({
-      plan: profile.plan || "free",
-      subscriptionId: profile.cashfree_subscription_id,
-      expiresAt: profile.plan_expires_at,
-      cashfreeStatus: subscriptionDetails?.subscription_status || null,
+      plan: currentPlan,
+      subscriptionId: typedProfile.cashfree_subscription_id,
+      expiresAt: typedProfile.plan_expires_at,
+      orderStatus: orderInfo?.order_status || null,
     });
   } catch (error) {
-    console.error("[Billing] Get subscription error:", error);
+    console.error("[Billing] Get plan error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -54,7 +79,7 @@ export async function GET() {
   }
 }
 
-// POST — Cancel subscription
+// POST — Downgrade to free (cancel current plan)
 export async function POST() {
   try {
     const supabase = await createClient();
@@ -70,22 +95,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from("users")
-      .select("cashfree_subscription_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.cashfree_subscription_id) {
-      return NextResponse.json(
-        { error: "No active subscription found" },
-        { status: 404 }
-      );
-    }
-
-    const result = await cancelSubscription(profile.cashfree_subscription_id);
-
-    // Update user plan to free
+    // Downgrade to free plan immediately
     await supabase
       .from("users")
       .update({
@@ -97,10 +107,10 @@ export async function POST() {
 
     return NextResponse.json({
       cancelled: true,
-      result,
+      plan: "free",
     });
   } catch (error) {
-    console.error("[Billing] Cancel subscription error:", error);
+    console.error("[Billing] Cancel plan error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

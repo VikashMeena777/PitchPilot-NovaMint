@@ -2,14 +2,14 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
 // ============================================
-// Cashfree Configuration
+// Cashfree Configuration — Order (Payment) API
 // ============================================
 const CASHFREE_BASE_URL =
   process.env.CASHFREE_ENVIRONMENT === "production"
     ? "https://api.cashfree.com/pg"
     : "https://sandbox.cashfree.com/pg";
 
-const API_VERSION = "2025-01-01";
+const API_VERSION = "2023-08-01";
 
 function getHeaders() {
   const clientId = process.env.CASHFREE_CLIENT_ID;
@@ -28,103 +28,75 @@ function getHeaders() {
 }
 
 // ============================================
-// Create Subscription Plan (one-time setup)
+// Create Order (One-Time Payment)
 // ============================================
-export async function createCashfreePlan(params: {
-  planId: string;
-  planName: string;
-  amount: number;
-  intervalType: "MONTH" | "YEAR";
-  intervals: number;
-  maxCycles?: number;
-}) {
-  const res = await fetch(`${CASHFREE_BASE_URL}/subscription-plans`, {
-    method: "POST",
-    headers: getHeaders(),
-    body: JSON.stringify({
-      plan_id: params.planId,
-      plan_name: params.planName,
-      plan_currency: "INR",
-      plan_amount: params.amount,
-      plan_interval_type: params.intervalType,
-      plan_intervals: params.intervals,
-      plan_max_cycles: params.maxCycles || 120,
-    }),
-  });
-
-  return res.json();
-}
-
-// ============================================
-// Create Subscription for User
-// ============================================
-export async function createSubscription(params: {
-  subscriptionId: string;
-  planId: string;
+export async function createOrder(params: {
+  orderId: string;
+  orderAmount: number;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
   returnUrl: string;
-  trialDays?: number;
+  planId: string;
 }) {
-  const body: Record<string, unknown> = {
-    subscription_id: params.subscriptionId,
-    plan_details: {
-      plan_id: params.planId,
-    },
+  const body = {
+    order_id: params.orderId,
+    order_amount: params.orderAmount,
+    order_currency: "INR",
     customer_details: {
+      customer_id: params.customerEmail.replace(/[^a-zA-Z0-9]/g, "_"),
       customer_name: params.customerName,
       customer_email: params.customerEmail,
       customer_phone: params.customerPhone,
     },
-    subscription_meta: {
-      return_url: params.returnUrl,
+    order_meta: {
+      return_url: params.returnUrl + "?order_id={order_id}",
+      notify_url: (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000") + "/api/billing/webhook",
+    },
+    order_note: `PitchPilot ${params.planId} plan purchase`,
+    order_tags: {
+      plan_id: params.planId,
     },
   };
 
-  if (params.trialDays && params.trialDays > 0) {
-    body.subscription_expiry_time = new Date(
-      Date.now() + params.trialDays * 24 * 60 * 60 * 1000
-    ).toISOString();
-  }
+  console.log("[Cashfree] Creating order:", params.orderId, "amount:", params.orderAmount);
 
-  const res = await fetch(`${CASHFREE_BASE_URL}/subscriptions`, {
+  const res = await fetch(`${CASHFREE_BASE_URL}/orders`, {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify(body),
   });
 
+  const data = await res.json();
+
+  if (!res.ok) {
+    console.error("[Cashfree] Order creation failed:", JSON.stringify(data));
+  }
+
+  return data;
+}
+
+// ============================================
+// Get Order Status
+// ============================================
+export async function getOrderStatus(orderId: string) {
+  const res = await fetch(`${CASHFREE_BASE_URL}/orders/${orderId}`, {
+    method: "GET",
+    headers: getHeaders(),
+  });
+
   return res.json();
 }
 
 // ============================================
-// Get Subscription Status
+// Get Payments for an Order
 // ============================================
-export async function getSubscription(subscriptionId: string) {
+export async function getOrderPayments(orderId: string) {
   const res = await fetch(
-    `${CASHFREE_BASE_URL}/subscriptions/${subscriptionId}`,
+    `${CASHFREE_BASE_URL}/orders/${orderId}/payments`,
     {
       method: "GET",
       headers: getHeaders(),
-    }
-  );
-
-  return res.json();
-}
-
-// ============================================
-// Cancel Subscription
-// ============================================
-export async function cancelSubscription(subscriptionId: string) {
-  const res = await fetch(
-    `${CASHFREE_BASE_URL}/subscriptions/${subscriptionId}/cancel`,
-    {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        subscription_id: subscriptionId,
-        cancel_immediately: true,
-      }),
     }
   );
 
@@ -157,7 +129,7 @@ export function verifyWebhookSignature(
 export async function updateUserPlan(
   userId: string,
   plan: string,
-  subscriptionId: string | null,
+  orderId: string | null,
   expiresAt: string | null
 ) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -173,7 +145,7 @@ export async function updateUserPlan(
     .from("users")
     .update({
       plan,
-      cashfree_subscription_id: subscriptionId,
+      cashfree_subscription_id: orderId,
       plan_expires_at: expiresAt,
     })
     .eq("id", userId);

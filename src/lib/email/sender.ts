@@ -215,21 +215,29 @@ export function formatOutreachHtml(
     mailingAddress: string;
   }
 ): string {
-  // Convert plain text body to properly formatted HTML paragraphs
-  const paragraphs = body
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => {
-      // Convert single newlines to <br>
-      const formatted = p
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\n/g, "<br>");
-      return `<p style="margin:0 0 16px;line-height:1.7;">${formatted}</p>`;
-    })
-    .join("\n");
+  // Detect if body is already HTML (from rich text editor)
+  const isHtml = /<[a-z][\s\S]*>/i.test(body);
+
+  let paragraphs: string;
+  if (isHtml) {
+    // Body is already HTML — use it directly (don't escape tags)
+    paragraphs = body;
+  } else {
+    // Plain text — convert to HTML paragraphs with safe escaping
+    paragraphs = body
+      .split(/\n\n+/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .map((p) => {
+        const formatted = p
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br>");
+        return `<p style="margin:0 0 16px;line-height:1.7;">${formatted}</p>`;
+      })
+      .join("\n");
+  }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const unsubscribeUrl = `${appUrl}/api/emails/unsubscribe`;

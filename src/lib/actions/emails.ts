@@ -89,11 +89,11 @@ export async function sendProspectEmail(params: {
     } else {
       // Gmail failed — fall through to Resend as backup
       console.warn(`[Email] Gmail send failed, falling back to Resend: ${gmailResult.error}`);
-      sendResult = await sendViaResend(prospect.email, senderName, userEmail, { ...params, body: bodyWithTracking }, profile, user.id);
+      sendResult = await sendViaResend(prospect.email, senderName, userEmail, { ...params, body: bodyWithTracking, bodyHtml: bodyWithTracking }, profile, user.id);
     }
   } else {
     // ─── Strategy 2: Resend (default) ─────────────────────────────
-    sendResult = await sendViaResend(prospect.email, senderName, userEmail, { ...params, body: bodyWithTracking }, profile, user.id);
+    sendResult = await sendViaResend(prospect.email, senderName, userEmail, { ...params, body: bodyWithTracking, bodyHtml: bodyWithTracking }, profile, user.id);
   }
 
   if (!sendResult.success) {
@@ -162,7 +162,7 @@ async function sendViaResend(
   toEmail: string,
   senderName: string,
   userEmail: string | undefined | null,
-  params: { subject: string; body: string; prospectId: string; sequenceId?: string },
+  params: { subject: string; body: string; bodyHtml?: string; prospectId: string; sequenceId?: string },
   profile: { full_name?: string; company_name?: string; mailing_address?: string } | null,
   userId: string,
 ) {
@@ -179,6 +179,7 @@ async function sendViaResend(
     senderName,
     subject: params.subject,
     body: params.body,
+    bodyHtml: params.bodyHtml,
     replyTo: userEmail || undefined,
     companyName: profile?.company_name || "",
     mailingAddress: profile?.mailing_address || "",

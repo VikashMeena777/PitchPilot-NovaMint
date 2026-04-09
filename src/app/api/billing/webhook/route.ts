@@ -8,10 +8,16 @@ export async function POST(request: NextRequest) {
     const timestamp = request.headers.get("x-cashfree-timestamp") || "";
     const signature = request.headers.get("x-cashfree-signature") || "";
 
-    // Verify webhook signature (skip if no signature — sandbox may not send one)
-    if (signature && !verifyWebhookSignature(rawBody, timestamp, signature)) {
-      console.error("[Webhook] Invalid signature");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    // Verify webhook signature
+    const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      // In production: always verify signature
+      if (!signature || !verifyWebhookSignature(rawBody, timestamp, signature)) {
+        console.error("[Webhook] Invalid or missing signature");
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
+    } else {
+      console.warn("[Webhook] CASHFREE_WEBHOOK_SECRET not set — skipping signature verification (sandbox only)");
     }
 
     const event = JSON.parse(rawBody);

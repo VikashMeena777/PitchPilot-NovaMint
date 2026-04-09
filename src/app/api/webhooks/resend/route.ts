@@ -16,11 +16,59 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not configured" }, { status: 500 });
   }
 
+  // Verify Resend webhook signature when secret is configured
+  const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+  const rawBody = await request.text();
+
+  if (webhookSecret) {
+    const svixId = request.headers.get("svix-id");
+    const svixTimestamp = request.headers.get("svix-timestamp");
+    const svixSignature = request.headers.get("svix-signature");
+
+    if (!svixId || !svixTimestamp || !svixSignature) {
+      console.error("[Resend Webhook] Missing svix headers");
+      return NextResponse.json({ error: "Missing signature headers" }, { status: 401 });
+    }
+
+    // Verify timestamp is within 5 minutes to prevent replay attacks
+    const timestamp = parseInt(svixTimestamp, 10);
+    const now = Math.floor(Date.now() / 1000);
+    if (Math.abs(now - timestamp) > 300) {
+      console.error("[Resend Webhook] Timestamp too old");
+      return NextResponse.json({ error: "Timestamp expired" }, { status: 401 });
+    }
+
+    // Verify HMAC signature
+    const crypto = require("crypto");
+    const secretBytes = Buffer.from(webhookSecret.replace("whsec_", ""), "base64");
+    const signBody = `${svixId}.${svixTimestamp}.${rawBody}`;
+    const expectedSignature = crypto
+      .createHmac("sha256", secretBytes)
+      .update(signBody)
+      .digest("base64");
+
+    const signatures = svixSignature.split(" ");
+    const isValid = signatures.some((sig: string) => {
+      const sigValue = sig.replace("v1,", "");
+      return crypto.timingSafeEqual(
+        Buffer.from(expectedSignature),
+        Buffer.from(sigValue)
+      );
+    });
+
+    if (!isValid) {
+      console.error("[Resend Webhook] Invalid signature");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+  } else {
+    console.warn("[Resend Webhook] RESEND_WEBHOOK_SECRET not set — skipping verification (dev only)");
+  }
+
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   let body;
   try {
-    body = await request.json();
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }

@@ -17,24 +17,29 @@ export type EmailTemplate = {
 };
 
 export async function getTemplates(category?: string) {
-  const supabase = await createClient();
-  if (!supabase) return { data: [], error: "Supabase not configured" };
+  try {
+    const supabase = await createClient();
+    if (!supabase) return { data: [], error: "Supabase not configured" };
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: [], error: "Not authenticated" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: [], error: "Not authenticated" };
 
-  let query = supabase
-    .from("email_templates")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("use_count", { ascending: false });
+    let query = supabase
+      .from("email_templates")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("use_count", { ascending: false });
 
-  if (category && category !== "all") {
-    query = query.eq("category", category);
+    if (category && category !== "all") {
+      query = query.eq("category", category);
+    }
+
+    const { data, error } = await query;
+    return { data: data || [], error: error?.message };
+  } catch (err) {
+    console.error("[Templates] getTemplates exception:", err);
+    return { data: [], error: err instanceof Error ? err.message : "Failed to load templates" };
   }
-
-  const { data, error } = await query;
-  return { data: data || [], error: error?.message };
 }
 
 export async function createTemplate(template: {
@@ -44,93 +49,116 @@ export async function createTemplate(template: {
   category?: string;
   is_ai_generated?: boolean;
 }) {
-  const supabase = await createClient();
-  if (!supabase) return { error: "Supabase not configured" };
+  try {
+    const supabase = await createClient();
+    if (!supabase) return { error: "Supabase not configured" };
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
 
-  const { data, error } = await supabase
-    .from("email_templates")
-    .insert({
-      user_id: user.id,
-      name: template.name,
-      subject: template.subject,
-      body: template.body,
-      category: template.category || "general",
-      is_ai_generated: template.is_ai_generated || false,
-      use_count: 0,
-    })
-    .select()
-    .single();
+    const { data, error } = await supabase
+      .from("email_templates")
+      .insert({
+        user_id: user.id,
+        name: template.name,
+        subject: template.subject,
+        body: template.body,
+        category: template.category || "general",
+        is_ai_generated: template.is_ai_generated || false,
+        use_count: 0,
+      })
+      .select()
+      .single();
 
-  if (error) return { error: error.message };
+    if (error) {
+      console.error("[Templates] Insert error:", error.message, error.code);
+      return { error: error.message };
+    }
 
-  revalidatePath("/templates");
-  return { data };
+    try { revalidatePath("/templates"); } catch { /* safe to ignore */ }
+    return { data };
+  } catch (err) {
+    console.error("[Templates] createTemplate exception:", err);
+    return { error: err instanceof Error ? err.message : "Failed to create template" };
+  }
 }
 
 export async function updateTemplate(
   id: string,
   updates: Partial<Pick<EmailTemplate, "name" | "subject" | "body" | "category">>
 ) {
-  const supabase = await createClient();
-  if (!supabase) return { error: "Supabase not configured" };
+  try {
+    const supabase = await createClient();
+    if (!supabase) return { error: "Supabase not configured" };
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
 
-  const { error } = await supabase
-    .from("email_templates")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("user_id", user.id);
+    const { error } = await supabase
+      .from("email_templates")
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .eq("user_id", user.id);
 
-  if (error) return { error: error.message };
+    if (error) return { error: error.message };
 
-  revalidatePath("/templates");
-  return { success: true };
+    try { revalidatePath("/templates"); } catch { /* safe to ignore */ }
+    return { success: true };
+  } catch (err) {
+    console.error("[Templates] updateTemplate exception:", err);
+    return { error: err instanceof Error ? err.message : "Failed to update template" };
+  }
 }
 
 export async function deleteTemplate(id: string) {
-  const supabase = await createClient();
-  if (!supabase) return { error: "Supabase not configured" };
+  try {
+    const supabase = await createClient();
+    if (!supabase) return { error: "Supabase not configured" };
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not authenticated" };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
 
-  const { error } = await supabase
-    .from("email_templates")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
+    const { error } = await supabase
+      .from("email_templates")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
 
-  if (error) return { error: error.message };
+    if (error) return { error: error.message };
 
-  revalidatePath("/emails");
-  return { success: true };
+    try { revalidatePath("/templates"); } catch { /* safe to ignore */ }
+    return { success: true };
+  } catch (err) {
+    console.error("[Templates] deleteTemplate exception:", err);
+    return { error: err instanceof Error ? err.message : "Failed to delete template" };
+  }
 }
 
 export async function incrementTemplateUsage(id: string) {
-  const supabase = await createClient();
-  if (!supabase) return;
+  try {
+    const supabase = await createClient();
+    if (!supabase) return;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-  // Use RPC or manual increment
-  const { data: template } = await supabase
-    .from("email_templates")
-    .select("use_count")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .single();
-
-  if (template) {
-    await supabase
+    // Use RPC or manual increment
+    const { data: template } = await supabase
       .from("email_templates")
-      .update({ use_count: (template.use_count || 0) + 1 })
-      .eq("id", id);
+      .select("use_count")
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (template) {
+      await supabase
+        .from("email_templates")
+        .update({ use_count: (template.use_count || 0) + 1 })
+        .eq("id", id);
+    }
+  } catch (err) {
+    console.error("[Templates] incrementTemplateUsage exception:", err);
+    // Non-critical — don't throw
   }
 }
 

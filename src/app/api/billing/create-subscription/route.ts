@@ -40,10 +40,20 @@ export async function POST(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    const orderId = `pp_${planId}_${Date.now()}`;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Check if Cashfree credentials are configured
+    if (!process.env.CASHFREE_CLIENT_ID || !process.env.CASHFREE_CLIENT_SECRET) {
+      console.error("[Billing] Cashfree credentials not configured");
+      return NextResponse.json(
+        { error: "Payment gateway not configured. Please contact support." },
+        { status: 500 }
+      );
+    }
 
     console.log(`[Billing] Creating order for user ${user.id}, plan: ${planId}, amount: ${plan.price}`);
+    console.log(`[Billing] Environment: ${process.env.CASHFREE_ENVIRONMENT || "sandbox"}`);
+
+    const orderId = `pp_${planId}_${Date.now()}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const result = await createOrder({
       orderId,
@@ -55,6 +65,18 @@ export async function POST(request: NextRequest) {
       planId,
     });
 
+    // Check if order creation returned an error (from our improved cashfree.ts)
+    if (result._httpStatus || result._error) {
+      console.error("[Billing] Cashfree API error:", result._httpStatus, result._error);
+      return NextResponse.json(
+        {
+          error: result._error || result.message || "Cashfree rejected the order",
+          debug: process.env.NODE_ENV === "development" ? result : undefined,
+        },
+        { status: result._httpStatus || 500 }
+      );
+    }
+
     // Cashfree returns payment_session_id for the checkout
     if (result.payment_session_id) {
       // Store pending order reference
@@ -64,6 +86,8 @@ export async function POST(request: NextRequest) {
           cashfree_subscription_id: orderId,
         })
         .eq("id", user.id);
+
+      console.log(`[Billing] Order created: ${result.order_id}, session: present`);
 
       return NextResponse.json({
         orderId: result.order_id || orderId,
@@ -94,7 +118,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.error("[Billing] Cashfree order error:", JSON.stringify(result));
+    console.error("[Billing] Cashfree returned unexpected response:", JSON.stringify(result));
     return NextResponse.json(
       {
         error:

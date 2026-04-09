@@ -9,7 +9,7 @@ const CASHFREE_BASE_URL =
     ? "https://api.cashfree.com/pg"
     : "https://sandbox.cashfree.com/pg";
 
-const API_VERSION = "2023-08-01";
+const API_VERSION = "2025-01-01";
 
 function getHeaders() {
   const clientId = process.env.CASHFREE_CLIENT_ID;
@@ -50,7 +50,7 @@ export async function createOrder(params: {
       customer_phone: params.customerPhone,
     },
     order_meta: {
-      return_url: params.returnUrl + "?order_id={order_id}",
+      return_url: params.returnUrl + "&order_id={order_id}",
       notify_url: (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000") + "/api/billing/webhook",
     },
     order_note: `PitchPilot ${params.planId} plan purchase`,
@@ -60,6 +60,9 @@ export async function createOrder(params: {
   };
 
   console.log("[Cashfree] Creating order:", params.orderId, "amount:", params.orderAmount);
+  console.log("[Cashfree] Base URL:", CASHFREE_BASE_URL);
+  console.log("[Cashfree] API Version:", API_VERSION);
+  console.log("[Cashfree] Return URL:", body.order_meta.return_url);
 
   const res = await fetch(`${CASHFREE_BASE_URL}/orders`, {
     method: "POST",
@@ -67,12 +70,26 @@ export async function createOrder(params: {
     body: JSON.stringify(body),
   });
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    console.error("[Cashfree] Order creation failed:", JSON.stringify(data));
+  const responseText = await res.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    console.error("[Cashfree] Non-JSON response:", res.status, responseText.substring(0, 500));
+    return { error: { message: `Cashfree returned non-JSON (${res.status}): ${responseText.substring(0, 200)}` } };
   }
 
+  if (!res.ok) {
+    console.error("[Cashfree] Order creation failed:", res.status, JSON.stringify(data));
+    // Surface the actual error from Cashfree
+    return {
+      ...data,
+      _httpStatus: res.status,
+      _error: data.message || data.error?.message || `HTTP ${res.status}`,
+    };
+  }
+
+  console.log("[Cashfree] Order created successfully:", data.order_id, "session:", data.payment_session_id ? "present" : "missing");
   return data;
 }
 

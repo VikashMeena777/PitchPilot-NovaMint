@@ -52,6 +52,8 @@ function BillingPageContent() {
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cashfreeReady, setCashfreeReady] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [cashfreeInstance, setCashfreeInstance] = useState<any>(null);
 
   // Check for return from Cashfree checkout
   useEffect(() => {
@@ -122,44 +124,60 @@ function BillingPageContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Failed to create order");
+        // Surface the actual Cashfree error for debugging
+        const errorMsg = data.error || data._error || data.message || "Failed to create order";
+        console.error("[Billing] Order creation failed:", data);
+        toast.error(errorMsg);
+        if (data.debug) {
+          console.error("[Billing] Debug info:", data.debug);
+        }
         return;
       }
 
-      if (data.paymentSessionId && cashfreeReady) {
-        // Use Cashfree JS SDK checkout
-        const cashfree = (window as unknown as Record<string, unknown>).Cashfree as {
-          checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<{ error?: { message: string }; paymentDetails?: unknown }>;
-        };
+      if (!data.paymentSessionId) {
+        console.error("[Billing] No paymentSessionId in response:", data);
+        toast.error("Payment session not created. Please try again.");
+        return;
+      }
 
-        if (cashfree) {
-          const checkoutResult = await cashfree.checkout({
+      // Strategy 1: Use Cashfree SDK v3 with _modal (avoids cookie/redirect issues)
+      if (cashfreeReady && cashfreeInstance) {
+        try {
+          console.log("[Cashfree] Opening checkout modal with session:", data.paymentSessionId.substring(0, 20) + "...");
+
+          const checkoutResult = await cashfreeInstance.checkout({
             paymentSessionId: data.paymentSessionId,
-            redirectTarget: "_self",
+            redirectTarget: "_modal",
           });
 
           if (checkoutResult?.error) {
+            console.error("[Cashfree] Checkout error:", checkoutResult.error);
             toast.error(checkoutResult.error.message || "Payment failed");
+          } else if (checkoutResult?.paymentDetails) {
+            // Payment completed via modal — reload to pick up changes
+            toast.success("Payment received! Activating your plan...");
+            // Give webhook time to process, then reload
+            setTimeout(() => {
+              window.location.href = "/billing?status=success";
+            }, 2000);
           }
-          // On success, Cashfree will redirect to return_url
           return;
+        } catch (sdkErr) {
+          console.error("[Cashfree] SDK checkout error:", sdkErr);
+          // Fall through to payment link fallback
         }
       }
 
-      // Fallback: open payment link (works even if SDK not loaded yet)
+      // Strategy 2: Use Cashfree payment link (if returned by API)
       if (data.paymentLink) {
+        console.log("[Cashfree] Using payment link fallback");
         window.location.href = data.paymentLink;
         return;
       }
 
-      // If we have sessionId but SDK wasn't ready, try direct URL
-      if (data.paymentSessionId) {
-        const env = process.env.NEXT_PUBLIC_CASHFREE_ENV === "production" ? "" : "sandbox.";
-        window.location.href = `https://${env}cashfree.com/sdk/checkout/${data.paymentSessionId}`;
-        return;
-      }
-
-      toast.error("Payment gateway unavailable. Please refresh and try again.");
+      // Strategy 3: SDK not loaded — show actionable error
+      console.error("[Cashfree] SDK not ready. cashfreeReady:", cashfreeReady, "instance:", !!cashfreeInstance);
+      toast.error("Payment gateway is loading. Please wait a moment and try again.");
     } catch (err) {
       console.error("Upgrade error:", err);
       toast.error("Something went wrong. Please try again.");
@@ -194,19 +212,26 @@ function BillingPageContent() {
 
   return (
     <>
-      {/* Load Cashfree JS SDK — afterInteractive ensures it loads before user interaction */}
+      {/* Load Cashfree JS SDK v3 */}
       <Script
         src="https://sdk.cashfree.com/js/v3/cashfree.js"
         onLoad={() => {
-          // Initialize Cashfree SDK
-          const CashfreeLib = (window as unknown as Record<string, unknown>).Cashfree as {
-            init: (opts: { mode: string }) => void;
-          } | undefined;
-          if (CashfreeLib) {
+          // Cashfree v3: window.Cashfree is a factory function, NOT a class with .init()
+          // Call Cashfree({ mode }) to get an instance with .checkout()
+          const CashfreeFactory = (window as unknown as Record<string, unknown>).Cashfree as
+            | ((opts: { mode: string }) => { checkout: (opts: { paymentSessionId: string; redirectTarget: string }) => Promise<{ error?: { message: string }; paymentDetails?: unknown }> })
+            | undefined;
+
+          if (CashfreeFactory) {
             const env = process.env.NEXT_PUBLIC_CASHFREE_ENV === "production" ? "production" : "sandbox";
-            CashfreeLib.init({ mode: env });
-            setCashfreeReady(true);
-            console.log("[Cashfree] SDK initialized in", env, "mode");
+            try {
+              const instance = CashfreeFactory({ mode: env });
+              setCashfreeInstance(instance);
+              setCashfreeReady(true);
+              console.log("[Cashfree] SDK v3 initialized in", env, "mode");
+            } catch (e) {
+              console.error("[Cashfree] SDK init failed:", e);
+            }
           }
         }}
         strategy="afterInteractive"

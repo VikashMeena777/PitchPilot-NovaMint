@@ -19,9 +19,9 @@ import {
   getTemplates,
   createTemplate,
   deleteTemplate,
-  STARTER_TEMPLATES,
   type EmailTemplate,
 } from "@/lib/actions/templates";
+import { STARTER_TEMPLATES } from "@/lib/constants/starter-templates";
 import {
   Plus,
   Trash2,

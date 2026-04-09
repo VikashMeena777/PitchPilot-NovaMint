@@ -154,12 +154,19 @@ function BillingPageContent() {
             console.error("[Cashfree] Checkout error:", checkoutResult.error);
             toast.error(checkoutResult.error.message || "Payment failed");
           } else if (checkoutResult?.paymentDetails) {
-            // Payment completed via modal — reload to pick up changes
+            // Payment completed via modal — reload with params so verifyOrder activates plan
             toast.success("Payment received! Activating your plan...");
-            // Give webhook time to process, then reload
+            // Include order_id and plan so the return-URL handler can verify and activate
             setTimeout(() => {
-              window.location.href = "/billing?status=success";
-            }, 2000);
+              window.location.href = `/billing?status=success&plan=${planId}&order_id=${data.orderId}`;
+            }, 1500);
+          } else {
+            // Modal closed — user may have completed payment but modal didn't return details
+            // Redirect with params so verifyOrder can check server-side
+            console.log("[Cashfree] Modal closed without clear status. Checking via verifyOrder...");
+            setTimeout(() => {
+              window.location.href = `/billing?status=success&plan=${planId}&order_id=${data.orderId}`;
+            }, 1000);
           }
           return;
         } catch (sdkErr) {

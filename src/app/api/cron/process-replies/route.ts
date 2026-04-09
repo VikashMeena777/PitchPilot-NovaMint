@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { categorizeReply } from "@/lib/ai/engine";
+import { sendReplyNotification } from "@/lib/email/notifications";
 
 /**
  * Cron Job: Process Replies
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
 
   let processed = 0;
   let sequencesStopped = 0;
+  let notificationsSent = 0;
 
   for (const email of uncategorized) {
     try {
@@ -139,6 +141,29 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Send reply notification to user if enabled
+      try {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("email, full_name, notify_replies")
+          .eq("id", email.user_id)
+          .single();
+
+        if (userData?.notify_replies && userData.email) {
+          await sendReplyNotification(userData.email, {
+            userName: userData.full_name || "User",
+            prospectName,
+            prospectEmail: email.prospects?.email || "",
+            replyCategory: categorization.category,
+            replySnippet: email.reply_body || "",
+            subject: email.subject || "",
+          });
+          notificationsSent++;
+        }
+      } catch (notifErr) {
+        console.error(`[Cron] Failed to send reply notification for email ${email.id}:`, notifErr);
+      }
+
       processed++;
     } catch (error) {
       console.error(
@@ -151,6 +176,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     processed,
     sequencesStopped,
+    notificationsSent,
     total: uncategorized.length,
     timestamp: new Date().toISOString(),
   });

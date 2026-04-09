@@ -126,24 +126,26 @@ export function AppSidebar() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative overflow-hidden rounded-xl p-3 bg-gradient-to-br from-[var(--pp-accent1)]/10 to-[var(--pp-accent4)]/5 border border-[var(--pp-border-accent)]"
+              className="relative overflow-hidden rounded-xl p-3 bg-gradient-to-br from-[var(--pp-accent1)]/10 to-[var(--pp-accent2)]/5 border border-[var(--pp-border-accent)]"
             >
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[var(--pp-accent1-light)]" />
+                <div className="icon-container icon-container-sm bg-gradient-to-br from-[var(--pp-accent1)]/20 to-[var(--pp-accent2)]/10">
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--pp-accent1-light)]" />
+                </div>
                 <div>
                   <p className="text-xs font-semibold text-[var(--pp-accent1-light)]">AI Engine</p>
                   <p className="text-[10px] text-[var(--pp-text-muted)]">Personalization active</p>
                 </div>
               </div>
-              <div className="badge-live absolute top-2 right-2">
-                <span className="sr-only">Live</span>
+              <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--pp-accent2-light)] animate-pulse" />
               </div>
             </motion.div>
           ) : (
             <Tooltip>
               <TooltipTrigger>
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)]/10 to-[var(--pp-accent4)]/5 border border-[var(--pp-border-accent)] flex items-center justify-center mx-auto cursor-default">
-                  <Sparkles className="w-4 h-4 text-[var(--pp-accent1-light)]" />
+                <div className="icon-container icon-container-sm bg-gradient-to-br from-[var(--pp-accent1)]/15 to-[var(--pp-accent2)]/8 border border-[var(--pp-border-accent)] mx-auto cursor-default">
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--pp-accent1-light)]" />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={8}>
@@ -209,7 +211,9 @@ export function AppSidebar() {
       </nav>
 
       {/* Bottom section */}
-      <div className="px-3 pb-3 space-y-1 border-t border-[var(--pp-border-subtle)] pt-3">
+      <div className="px-3 pb-3 space-y-1 pt-3">
+        {/* Gradient section divider */}
+        <div className="section-divider mb-3" />
         {bottomNavItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;

@@ -18,11 +18,11 @@ export default function AuthLayout({
           style={{ width: 600, height: 600, top: "-15%", left: "-10%" }}
         />
         <div
-          className="orb orb-pink"
+          className="orb orb-violet"
           style={{ width: 500, height: 500, bottom: "-10%", right: "-8%" }}
         />
         <div
-          className="orb orb-emerald"
+          className="orb orb-cyan"
           style={{ width: 400, height: 400, top: "40%", right: "20%" }}
         />
 

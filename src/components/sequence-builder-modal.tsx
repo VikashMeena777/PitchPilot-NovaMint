@@ -228,7 +228,7 @@ export function SequenceBuilderModal({ isOpen, onClose, sequenceId, sequenceName
                           <Button
                             onClick={handleAddStep}
                             disabled={isSaving || !newSubject.trim() || !newBody.trim()}
-                            className="bg-gradient-to-r from-[var(--pp-accent2)] to-emerald-700 text-white font-semibold cursor-pointer btn-hover"
+                            className="bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold cursor-pointer btn-hover glow-indigo"
                           >
                             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
                             Save Step

@@ -12,11 +12,11 @@ import {
   CalendarCheck,
   Zap,
   Plus,
-  Sparkles,
   Mail,
   UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 import Link from "next/link";
 import { getDashboardStats } from "@/lib/actions/user";
 
@@ -43,29 +43,33 @@ const quickActions = [
     description: "Upload CSV or add manually",
     icon: UserPlus,
     href: "/prospects",
-    color: "from-[var(--pp-accent1)] to-indigo-700",
+    accent: "var(--pp-accent1)",
+    gradient: "from-[var(--pp-accent1)]/15 to-[var(--pp-accent1)]/5",
   },
   {
     label: "Create Sequence",
     description: "Set up automated outreach flow",
     icon: Zap,
     href: "/sequences",
-    color: "from-[var(--pp-accent2)] to-emerald-700",
+    accent: "var(--pp-accent2)",
+    gradient: "from-[var(--pp-accent2)]/15 to-[var(--pp-accent2)]/5",
   },
   {
     label: "View Analytics",
     description: "Track campaign performance",
     icon: TrendingUp,
     href: "/analytics",
-    color: "from-[var(--pp-accent3)] to-amber-700",
+    accent: "var(--pp-accent3)",
+    gradient: "from-[var(--pp-accent3)]/15 to-[var(--pp-accent3)]/5",
   },
 ];
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 16, filter: "blur(6px)" },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
+    filter: "blur(0px)",
     transition: {
       delay: i * 0.08,
       duration: 0.6,
@@ -81,7 +85,7 @@ const STATUS_COLORS: Record<string, string> = {
   replied: "var(--pp-accent2)",
   interested: "#22c55e",
   not_interested: "#ef4444",
-  meeting_booked: "#f59e0b",
+  meeting_booked: "var(--pp-accent3)",
 };
 
 export default function DashboardPage() {
@@ -99,31 +103,33 @@ export default function DashboardPage() {
   const stats = [
     {
       label: "Total Prospects",
-      value: isLoading ? "—" : data?.totalProspects.toLocaleString() || "0",
+      value: data?.totalProspects ?? 0,
       icon: Users,
-      color: "var(--pp-accent1)",
-      glow: "var(--pp-glow-indigo)",
+      accent: "var(--pp-accent1)",
+      gradient: "from-[var(--pp-accent1)]/15 to-[var(--pp-accent1)]/5",
     },
     {
       label: "Emails Sent",
-      value: isLoading ? "—" : data?.emailsSent.toLocaleString() || "0",
+      value: data?.emailsSent ?? 0,
       icon: Send,
-      color: "var(--pp-accent2)",
-      glow: "var(--pp-glow-emerald)",
+      accent: "var(--pp-accent2)",
+      gradient: "from-[var(--pp-accent2)]/15 to-[var(--pp-accent2)]/5",
     },
     {
       label: "Open Rate",
-      value: isLoading ? "—" : `${data?.openRate || 0}%`,
+      value: data?.openRate ?? 0,
+      suffix: "%",
       icon: Eye,
-      color: "var(--pp-accent3)",
-      glow: "var(--pp-glow-amber)",
+      accent: "var(--pp-accent3)",
+      gradient: "from-[var(--pp-accent3)]/15 to-[var(--pp-accent3)]/5",
     },
     {
       label: "Reply Rate",
-      value: isLoading ? "—" : `${data?.replyRate || 0}%`,
+      value: data?.replyRate ?? 0,
+      suffix: "%",
       icon: MessageSquare,
-      color: "var(--pp-accent4)",
-      glow: "var(--pp-glow-pink)",
+      accent: "var(--pp-accent4)",
+      gradient: "from-[var(--pp-accent4)]/15 to-[var(--pp-accent4)]/5",
     },
   ];
 
@@ -170,39 +176,42 @@ export default function DashboardPage() {
               initial="hidden"
               animate="show"
               variants={fadeInUp}
-              className="relative group rounded-2xl p-5 bg-[var(--pp-bg-surface)] border border-[var(--pp-border-subtle)] card-hover overflow-hidden"
+              className="relative group rounded-2xl p-5 bg-[var(--pp-bg-surface)] border border-[var(--pp-border-subtle)] card-hover card-spotlight card-top-accent overflow-hidden"
+              style={{ "--accent-gradient": `linear-gradient(90deg, ${stat.accent}, transparent)` } as React.CSSProperties}
             >
+              {/* Hover glow */}
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
                 style={{
-                  background: `radial-gradient(circle at 50% 50%, ${stat.glow}, transparent 70%)`,
+                  background: `radial-gradient(circle at 50% 50%, color-mix(in srgb, ${stat.accent} 10%, transparent), transparent 70%)`,
                 }}
               />
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: `${stat.color}15` }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color: stat.color }} />
+                  <div className={`icon-container icon-container-md bg-gradient-to-br ${stat.gradient}`}>
+                    <Icon className="w-5 h-5" style={{ color: stat.accent }} />
                   </div>
                   {!isLoading && (
-                    <div className="flex items-center gap-1 text-xs font-medium text-[var(--pp-accent2)]">
-                      <Sparkles className="w-3 h-3" />
+                    <div className="flex items-center gap-1 text-[10px] font-medium text-[var(--pp-accent2-light)] bg-[var(--pp-accent2)]/8 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--pp-accent2-light)] animate-pulse" />
                       Live
                     </div>
                   )}
                 </div>
-                <p
+                <div
                   className="text-2xl font-bold text-[var(--pp-text-primary)] tracking-tight"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   {isLoading ? (
                     <span className="inline-block w-16 h-7 bg-[var(--pp-bg-surface2)] rounded animate-pulse" />
                   ) : (
-                    stat.value
+                    <AnimatedCounter
+                      value={stat.value}
+                      suffix={stat.suffix || ""}
+                      className="text-2xl font-bold"
+                    />
                   )}
-                </p>
+                </div>
                 <p className="text-xs text-[var(--pp-text-muted)] mt-1">{stat.label}</p>
               </div>
             </motion.div>
@@ -290,7 +299,9 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="p-12 text-center">
-              <Users className="w-8 h-8 mx-auto text-[var(--pp-text-muted)] mb-2" />
+              <div className="icon-container icon-container-lg bg-gradient-to-br from-[var(--pp-accent1)]/10 to-[var(--pp-accent4)]/5 mx-auto mb-3">
+                <Users className="w-6 h-6 text-[var(--pp-text-muted)]" />
+              </div>
               <p className="text-sm text-[var(--pp-text-muted)]">No prospects yet</p>
               <p className="text-xs text-[var(--pp-text-muted)] mt-1">Add prospects to see them here</p>
             </div>
@@ -314,8 +325,8 @@ export default function DashboardPage() {
                   className="rounded-2xl p-4 bg-[var(--pp-bg-surface)] border border-[var(--pp-border-subtle)] card-hover"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center flex-shrink-0 shadow-md`}>
-                      <Icon className="w-5 h-5 text-white" />
+                    <div className={`icon-container icon-container-md bg-gradient-to-br ${action.gradient}`}>
+                      <Icon className="w-5 h-5" style={{ color: action.accent }} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-[var(--pp-text-primary)] group-hover:text-[var(--pp-accent1-light)] transition-colors duration-200">
@@ -333,13 +344,15 @@ export default function DashboardPage() {
           {/* Active Sequences Summary */}
           <motion.div custom={10} initial="hidden" animate="show" variants={fadeInUp} className="rounded-2xl p-4 bg-[var(--pp-bg-surface)] border border-[var(--pp-border-subtle)]">
             <div className="flex items-center gap-2 mb-3">
-              <CalendarCheck className="w-4 h-4 text-[var(--pp-accent1-light)]" />
+              <div className="icon-container icon-container-sm bg-gradient-to-br from-[var(--pp-accent1)]/12 to-[var(--pp-accent4)]/8">
+                <CalendarCheck className="w-4 h-4 text-[var(--pp-accent1-light)]" />
+              </div>
               <h4 className="text-sm font-semibold text-[var(--pp-text-primary)]">Active Sequences</h4>
             </div>
             {isLoading ? (
               <div className="h-4 bg-[var(--pp-bg-surface2)] rounded w-2/3 animate-pulse" />
             ) : data && data.activeSequences > 0 ? (
-              <p className="text-sm text-[var(--pp-accent2)]">
+              <p className="text-sm text-[var(--pp-accent2-light)]">
                 <span className="font-bold">{data.activeSequences}</span> sequence{data.activeSequences > 1 ? "s" : ""} running
               </p>
             ) : (

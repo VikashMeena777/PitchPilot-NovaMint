@@ -135,8 +135,8 @@ export default function OnboardingPage() {
       {/* Aurora background */}
       <div className="fixed inset-0 bg-[var(--pp-bg-deepest)]">
         <div className="orb orb-indigo" style={{ width: 600, height: 600, top: "-15%", left: "-10%" }} />
-        <div className="orb orb-pink" style={{ width: 500, height: 500, bottom: "-10%", right: "-8%" }} />
-        <div className="orb orb-emerald" style={{ width: 350, height: 350, top: "50%", right: "30%" }} />
+        <div className="orb orb-violet" style={{ width: 500, height: 500, bottom: "-10%", right: "-8%" }} />
+        <div className="orb orb-cyan" style={{ width: 350, height: 350, top: "50%", right: "30%" }} />
         <div className="absolute inset-0 grid-pattern" />
       </div>
 

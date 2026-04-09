@@ -129,7 +129,7 @@ export default function SequencesPage() {
           </p>
           <Button
             onClick={() => setShowCreateModal(true)}
-            className="bg-gradient-to-r from-[var(--pp-accent2)] to-emerald-700 text-white font-semibold cursor-pointer btn-hover glow-emerald"
+            className="bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold cursor-pointer btn-hover glow-indigo"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Create Your First Sequence

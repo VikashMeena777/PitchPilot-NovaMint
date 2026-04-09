@@ -64,6 +64,7 @@ export default function SettingsPage() {
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
   const [supabaseReady, setSupabaseReady] = useState(false);
   const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false);
+  const [originalProfile, setOriginalProfile] = useState<string>("");
   const [profile, setProfile] = useState<UserProfile>({
     full_name: "",
     company_name: "",
@@ -156,6 +157,22 @@ export default function SettingsPage() {
           gmail_connected: result.data.gmail_connected || false,
           gmail_email: result.data.gmail_email || "",
         });
+        setOriginalProfile(JSON.stringify({
+          full_name: result.data.full_name || "",
+          company_name: result.data.company_name || "",
+          value_proposition: result.data.value_proposition || "",
+          target_audience: result.data.target_audience || "",
+          tone_preset: result.data.tone_preset || "professional",
+          sending_email: result.data.sending_email || "",
+          sending_name: result.data.sending_name || "",
+          timezone: result.data.timezone || "UTC",
+          daily_send_limit: result.data.daily_send_limit || 50,
+          mailing_address: result.data.mailing_address || "",
+          notify_replies: result.data.notify_replies ?? true,
+          notify_daily_digest: result.data.notify_daily_digest ?? true,
+          notify_weekly_report: result.data.notify_weekly_report ?? false,
+          api_key: result.data.api_key || "",
+        }));
       }
       setIsLoading(false);
     })();
@@ -184,6 +201,23 @@ export default function SettingsPage() {
       toast.error(result.error);
     } else {
       toast.success("Settings saved successfully");
+      // Update original snapshot so button hides
+      setOriginalProfile(JSON.stringify({
+        full_name: profile.full_name,
+        company_name: profile.company_name,
+        value_proposition: profile.value_proposition,
+        target_audience: profile.target_audience,
+        tone_preset: profile.tone_preset,
+        sending_email: profile.sending_email,
+        sending_name: profile.sending_name,
+        timezone: profile.timezone,
+        daily_send_limit: profile.daily_send_limit,
+        mailing_address: profile.mailing_address,
+        notify_replies: profile.notify_replies,
+        notify_daily_digest: profile.notify_daily_digest,
+        notify_weekly_report: profile.notify_weekly_report,
+        api_key: profile.api_key,
+      }));
     }
     setIsSaving(false);
   };
@@ -215,6 +249,24 @@ export default function SettingsPage() {
   const updateField = (field: keyof UserProfile, value: string | number | boolean) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Check if any tracked field has changed from the loaded values
+  const isDirty = originalProfile !== "" && originalProfile !== JSON.stringify({
+    full_name: profile.full_name,
+    company_name: profile.company_name,
+    value_proposition: profile.value_proposition,
+    target_audience: profile.target_audience,
+    tone_preset: profile.tone_preset,
+    sending_email: profile.sending_email,
+    sending_name: profile.sending_name,
+    timezone: profile.timezone,
+    daily_send_limit: profile.daily_send_limit,
+    mailing_address: profile.mailing_address,
+    notify_replies: profile.notify_replies,
+    notify_daily_digest: profile.notify_daily_digest,
+    notify_weekly_report: profile.notify_weekly_report,
+    api_key: profile.api_key,
+  });
 
   if (isLoading) {
     return (
@@ -604,14 +656,16 @@ export default function SettingsPage() {
           </h1>
           <p className="text-sm text-[var(--pp-text-muted)] mt-0.5">Manage your account and preferences</p>
         </div>
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold cursor-pointer btn-hover glow-indigo disabled:opacity-50"
-        >
-          {isSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-          Save Changes
-        </Button>
+        {isDirty && (
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-gradient-to-r from-[var(--pp-accent1)] to-[var(--pp-accent1-dark)] text-white font-semibold cursor-pointer btn-hover glow-indigo disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+            Save Changes
+          </Button>
+        )}
       </div>
 
       <div className="space-y-6 max-w-3xl">

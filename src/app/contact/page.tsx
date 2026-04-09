@@ -27,7 +27,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--pp-bg-deepest)] text-[var(--pp-text-primary)] noise">
+    <div className="min-h-screen bg-[var(--pp-bg-deepest)] text-[var(--pp-text-primary)]">
       {/* Nav */}
       <nav className="border-b border-[var(--pp-border-subtle)]">
         <div className="glass-strong">

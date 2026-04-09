@@ -84,7 +84,6 @@ export function AppHeader({ onMobileMenuToggle }: { onMobileMenuToggle?: () => v
             className="relative text-[var(--pp-text-muted)] hover:text-[var(--pp-text-primary)] transition-colors duration-200 cursor-pointer rounded-md p-2 hover:bg-[var(--pp-bg-surface2)] border-none bg-transparent outline-none"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--pp-accent1)] ring-2 ring-[var(--pp-bg-deepest)]" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"

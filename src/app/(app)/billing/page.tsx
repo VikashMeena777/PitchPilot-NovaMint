@@ -146,14 +146,20 @@ function BillingPageContent() {
         }
       }
 
-      // Fallback: If Cashfree SDK not loaded, redirect to payment link
+      // Fallback: open payment link (works even if SDK not loaded yet)
       if (data.paymentLink) {
         window.location.href = data.paymentLink;
         return;
       }
 
-      // If neither SDK nor link works, show manual flow
-      toast.error("Payment gateway is loading. Please try again in a moment.");
+      // If we have sessionId but SDK wasn't ready, try direct URL
+      if (data.paymentSessionId) {
+        const env = process.env.NEXT_PUBLIC_CASHFREE_ENV === "production" ? "" : "sandbox.";
+        window.location.href = `https://${env}cashfree.com/sdk/checkout/${data.paymentSessionId}`;
+        return;
+      }
+
+      toast.error("Payment gateway unavailable. Please refresh and try again.");
     } catch (err) {
       console.error("Upgrade error:", err);
       toast.error("Something went wrong. Please try again.");
@@ -188,7 +194,7 @@ function BillingPageContent() {
 
   return (
     <>
-      {/* Load Cashfree JS SDK */}
+      {/* Load Cashfree JS SDK — afterInteractive ensures it loads before user interaction */}
       <Script
         src="https://sdk.cashfree.com/js/v3/cashfree.js"
         onLoad={() => {
@@ -200,9 +206,10 @@ function BillingPageContent() {
             const env = process.env.NEXT_PUBLIC_CASHFREE_ENV === "production" ? "production" : "sandbox";
             CashfreeLib.init({ mode: env });
             setCashfreeReady(true);
+            console.log("[Cashfree] SDK initialized in", env, "mode");
           }
         }}
-        strategy="lazyOnload"
+        strategy="afterInteractive"
       />
 
       <motion.div

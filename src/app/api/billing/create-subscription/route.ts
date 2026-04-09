@@ -101,13 +101,15 @@ export async function POST(request: NextRequest) {
           result.message ||
           result.error?.message ||
           "Failed to create order. Please try again.",
+        debug: process.env.NODE_ENV === "development" ? result : undefined,
       },
       { status: 500 }
     );
   } catch (error) {
-    console.error("[Billing] Create order error:", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("[Billing] Create order error:", errMsg, error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Payment error: ${errMsg}` },
       { status: 500 }
     );
   }

@@ -66,7 +66,7 @@ export async function createTemplate(template: {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/emails");
+  revalidatePath("/templates");
   return { data };
 }
 
@@ -88,7 +88,7 @@ export async function updateTemplate(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/emails");
+  revalidatePath("/templates");
   return { success: true };
 }
 

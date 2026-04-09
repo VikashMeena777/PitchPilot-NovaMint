@@ -22,7 +22,6 @@ import {
   STARTER_TEMPLATES,
   type EmailTemplate,
 } from "@/lib/actions/templates";
-import { createClient } from "@/lib/supabase/client";
 import {
   Plus,
   Trash2,
@@ -51,7 +50,7 @@ export default function TemplatesPage() {
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
-  const [supabaseReady, setSupabaseReady] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   // Create form state
   const [newTemplate, setNewTemplate] = useState({
@@ -60,22 +59,17 @@ export default function TemplatesPage() {
     body: "",
     category: "general",
   });
-  const [creating, setCreating] = useState(false);
-
-  useEffect(() => {
-    const client = createClient();
-    setSupabaseReady(!!client);
-  }, []);
 
   const loadTemplates = useCallback(async () => {
-    if (!supabaseReady) {
+    try {
+      const result = await getTemplates(category !== "all" ? category : undefined);
+      setTemplates((result.data || []) as EmailTemplate[]);
+    } catch (err) {
+      console.error("Failed to load templates:", err);
+    } finally {
       setLoading(false);
-      return;
     }
-    const result = await getTemplates(category !== "all" ? category : undefined);
-    setTemplates((result.data || []) as EmailTemplate[]);
-    setLoading(false);
-  }, [category, supabaseReady]);
+  }, [category]);
 
   useEffect(() => {
     loadTemplates();
@@ -83,39 +77,55 @@ export default function TemplatesPage() {
 
   const handleCreate = async () => {
     if (!newTemplate.name || !newTemplate.subject || !newTemplate.body) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in all required fields");
       return;
     }
     setCreating(true);
-    const result = await createTemplate(newTemplate);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Template created!");
-      setNewTemplate({ name: "", subject: "", body: "", category: "general" });
-      setShowCreate(false);
-      loadTemplates();
+    try {
+      const result = await createTemplate(newTemplate);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Template created successfully!");
+        setNewTemplate({ name: "", subject: "", body: "", category: "general" });
+        setShowCreate(false);
+        loadTemplates();
+      }
+    } catch (err) {
+      console.error("Create template error:", err);
+      toast.error("Failed to save template. Please try again.");
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const handleSeedStarters = async () => {
-    let count = 0;
-    for (const template of STARTER_TEMPLATES) {
-      const result = await createTemplate(template);
-      if (!result.error) count++;
+    try {
+      let count = 0;
+      for (const template of STARTER_TEMPLATES) {
+        const result = await createTemplate(template);
+        if (!result.error) count++;
+      }
+      toast.success(`Added ${count} starter templates!`);
+      loadTemplates();
+    } catch (err) {
+      console.error("Seed starters error:", err);
+      toast.error("Failed to add starter templates.");
     }
-    toast.success(`Added ${count} starter templates!`);
-    loadTemplates();
   };
 
   const handleDelete = async (id: string) => {
-    const result = await deleteTemplate(id);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Template deleted");
-      loadTemplates();
+    try {
+      const result = await deleteTemplate(id);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Template deleted");
+        loadTemplates();
+      }
+    } catch (err) {
+      console.error("Delete template error:", err);
+      toast.error("Failed to delete template.");
     }
   };
 

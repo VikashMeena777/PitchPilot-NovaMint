@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint for webhook health check
 export async function GET() {
   return NextResponse.json({
-    service: "PitchPilot Webhook API",
+    service: "PitchMint Webhook API",
     version: "1.0",
     available_actions: [
       "add_prospect",

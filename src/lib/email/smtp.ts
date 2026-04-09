@@ -86,7 +86,7 @@ export async function sendViaSmtp(
       text: params.text,
       replyTo: params.replyTo || undefined,
       headers: {
-        "X-Mailer": "PitchPilot",
+        "X-Mailer": "PitchMint",
         "List-Unsubscribe": `<mailto:${params.from}?subject=unsubscribe>`,
       },
     });
@@ -113,23 +113,23 @@ export async function sendSmtpTestEmail(
   return sendViaSmtp(config, {
     to: toEmail,
     from: config.username,
-    senderName: "PitchPilot",
-    subject: "✅ PitchPilot SMTP Test — Configuration Verified",
+    senderName: "PitchMint",
+    subject: "✅ PitchMint SMTP Test — Configuration Verified",
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px;">
         <h2 style="color: #7c3aed; margin-bottom: 16px;">🎉 SMTP Configuration Verified!</h2>
         <p style="color: #374151; line-height: 1.6;">
-          Your custom SMTP settings are working correctly. Emails sent through PitchPilot will now be delivered via your own mail server.
+          Your custom SMTP settings are working correctly. Emails sent through PitchMint will now be delivered via your own mail server.
         </p>
         <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
           <p style="margin: 0; font-size: 13px; color: #6b7280;"><strong>Server:</strong> ${config.host}:${config.port}</p>
           <p style="margin: 4px 0 0; font-size: 13px; color: #6b7280;"><strong>Username:</strong> ${config.username}</p>
         </div>
         <p style="font-size: 12px; color: #9ca3af;">
-          Sent from PitchPilot at ${new Date().toISOString()}
+          Sent from PitchMint at ${new Date().toISOString()}
         </p>
       </div>
     `,
-    text: `PitchPilot SMTP Test — Your SMTP configuration (${config.host}:${config.port}) is working correctly!`,
+    text: `PitchMint SMTP Test — Your SMTP configuration (${config.host}:${config.port}) is working correctly!`,
   });
 }

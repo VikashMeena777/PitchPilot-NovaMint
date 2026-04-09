@@ -91,7 +91,7 @@ export default function LoginPage() {
         variants={fadeInStagger}
         className="text-[var(--pp-text-secondary)] text-sm text-center mb-8"
       >
-        Sign in to your PitchPilot account
+        Sign in to your PitchMint account
       </motion.p>
 
       {/* Google OAuth */}

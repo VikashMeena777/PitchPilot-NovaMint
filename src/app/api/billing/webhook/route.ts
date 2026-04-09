@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
     // Extract plan from order tags or note
     let planId = orderTags.plan_id || "";
     if (!planId && orderNote) {
-      // Parse from note like "PitchPilot starter plan purchase"
-      const match = orderNote.match(/PitchPilot (\w+) plan/);
+      // Parse from note like "PitchMint starter plan purchase"
+      const match = orderNote.match(/PitchMint (\w+) plan/);
       if (match) planId = match[1];
     }
     // Also try extracting from order_id format: pp_starter_1234567890

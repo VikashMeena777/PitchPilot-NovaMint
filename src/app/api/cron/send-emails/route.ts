@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const senderName = email.from_name || email.users?.sending_name || "PitchPilot";
+      const senderName = email.from_name || email.users?.sending_name || "PitchMint";
 
       // ─── Wrap in professional HTML template ────────────────────────
       const { formatOutreachHtml } = await import("@/lib/email/sender");
@@ -208,7 +208,7 @@ async function sendViaResendCron(
   const defaultFrom = process.env.DEFAULT_FROM_EMAIL || "outreach@novamintnetworks.in";
   const fromEmail: string = email.from_email || defaultFrom;
   const fromName: string =
-    email.from_name || email.users?.sending_name || "PitchPilot";
+    email.from_name || email.users?.sending_name || "PitchMint";
 
   // Fetch full user profile for template context
   const { data: userProfile } = await supabase

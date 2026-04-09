@@ -56,13 +56,13 @@ export function captureError(
   switch (severity) {
     case "fatal":
     case "error":
-      console.error("[PitchPilot Error]", JSON.stringify(logData, null, 2));
+      console.error("[PitchMint Error]", JSON.stringify(logData, null, 2));
       break;
     case "warning":
-      console.warn("[PitchPilot Warning]", JSON.stringify(logData, null, 2));
+      console.warn("[PitchMint Warning]", JSON.stringify(logData, null, 2));
       break;
     case "info":
-      console.info("[PitchPilot Info]", JSON.stringify(logData, null, 2));
+      console.info("[PitchMint Info]", JSON.stringify(logData, null, 2));
       break;
   }
 }
@@ -85,7 +85,7 @@ export function captureMessage(
     }
   }
 
-  console.log(`[PitchPilot ${severity}]`, message, context || "");
+  console.log(`[PitchMint ${severity}]`, message, context || "");
 }
 
 /**

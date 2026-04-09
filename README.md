@@ -1,4 +1,4 @@
-# 🚀 PitchPilot
+# 🚀 PitchMint
 
 **AI-Powered Cold Outreach SaaS** — Automate prospect research, email personalization, and sequence management with intelligent AI.
 
@@ -61,8 +61,8 @@
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/pitchpilot.git
-cd pitchpilot
+git clone https://github.com/your-username/pitchmint.git
+cd pitchmint
 
 # Install dependencies
 npm install

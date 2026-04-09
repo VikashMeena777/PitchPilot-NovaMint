@@ -139,14 +139,14 @@ export type TestEmailProps = {
 
 export function TestEmail({
   senderName = "User",
-  companyName = "PitchPilot",
+  companyName = "PitchMint",
   sendingEmail = "",
   replyTo = "",
 }: TestEmailProps) {
   return (
     <Html>
       <Head />
-      <Preview>✅ Your PitchPilot email setup is working!</Preview>
+      <Preview>✅ Your PitchMint email setup is working!</Preview>
       <Body style={{ backgroundColor: palette.bgPage, margin: 0, padding: 0, fontFamily: font }}>
         <Container style={{ maxWidth: "560px", margin: "0 auto", padding: "48px 20px" }}>
           {/* Header with gradient accent */}
@@ -296,8 +296,8 @@ export function TestEmail({
             }}
           >
             Sent by{" "}
-            <Link href="https://pitchpilot.novamintnetworks.in" style={{ color: palette.accent }}>
-              PitchPilot
+            <Link href="https://pitchmint.novamintnetworks.in" style={{ color: palette.accent }}>
+              PitchMint
             </Link>{" "}
             · AI-Powered Cold Outreach Platform
           </Text>

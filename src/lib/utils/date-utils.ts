@@ -1,5 +1,5 @@
 /**
- * Date/time utility helpers for PitchPilot
+ * Date/time utility helpers for PitchMint
  */
 
 /**

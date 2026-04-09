@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ══════════════════════════════════════════════
-   PITCHPILOT — DARK CINEMATIC DESIGN SYSTEM
+   PITCHMINT — DARK CINEMATIC DESIGN SYSTEM
    Aesthetic: Dark Cinematic + Aurora Mesh
    Fonts: Plus Jakarta Sans (headings) + Inter (body)
    Palette: Midnight → Indigo → Violet → Cyan
@@ -56,7 +56,7 @@
 }
 
 /* ─────────────────────────────────────────────
-   PITCHPILOT CUSTOM DESIGN TOKENS
+   PITCHMINT CUSTOM DESIGN TOKENS
    ───────────────────────────────────────────── */
 :root {
   /* Core background tones */
@@ -114,7 +114,7 @@
 
 
 /* ─────────────────────────────────────────────
-   SHADCN THEME — Dark-First PitchPilot palette
+   SHADCN THEME — Dark-First PitchMint palette
    ───────────────────────────────────────────── */
 
 /* Light mode fallback (landing page flexibility) */

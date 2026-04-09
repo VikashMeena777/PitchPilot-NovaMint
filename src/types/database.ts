@@ -1,5 +1,5 @@
 // =============================================
-// PitchPilot — Database Types
+// PitchMint — Database Types
 // =============================================
 
 export type UserPlan = "free" | "starter" | "growth" | "agency";

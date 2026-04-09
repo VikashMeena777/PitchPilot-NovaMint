@@ -1,5 +1,5 @@
 // ============================================
-// PitchPilot Billing Plans
+// PitchMint Billing Plans
 // ============================================
 
 export type PlanId = "free" | "starter" | "growth" | "agency";
@@ -55,14 +55,14 @@ export const PLANS: Record<PlanId, PlanDetails> = {
       "100 emails per day",
       "Full analytics dashboard",
       "Priority AI models",
-      "No PitchPilot branding",
+      "No PitchMint branding",
     ],
     limits: {
       monthlyProspects: 200,
       activeSequences: 3,
       dailySendLimit: 100,
     },
-    cashfreePlanId: "pitchpilot_starter_monthly",
+    cashfreePlanId: "pitchmint_starter_monthly",
     trialDays: 7,
     popular: true,
   },
@@ -79,14 +79,14 @@ export const PLANS: Record<PlanId, PlanDetails> = {
       "A/B testing",
       "Advanced analytics",
       "Priority AI models",
-      "No PitchPilot branding",
+      "No PitchMint branding",
     ],
     limits: {
       monthlyProspects: 500,
       activeSequences: -1,
       dailySendLimit: 200,
     },
-    cashfreePlanId: "pitchpilot_growth_monthly",
+    cashfreePlanId: "pitchmint_growth_monthly",
     trialDays: 0,
   },
   agency: {
@@ -110,7 +110,7 @@ export const PLANS: Record<PlanId, PlanDetails> = {
       activeSequences: -1,
       dailySendLimit: 500,
     },
-    cashfreePlanId: "pitchpilot_agency_monthly",
+    cashfreePlanId: "pitchmint_agency_monthly",
     trialDays: 0,
   },
 };

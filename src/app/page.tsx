@@ -88,7 +88,7 @@ const plans = [
     name: "Free",
     price: "$0",
     period: "forever",
-    description: "Try PitchPilot with limited features",
+    description: "Try PitchMint with limited features",
     features: [
       "25 prospects/month",
       "1 active sequence",
@@ -140,7 +140,7 @@ const plans = [
 const faqs = [
   {
     q: "How does the AI personalization work?",
-    a: "PitchPilot researches each prospect — their company website, recent social posts, tech stack, and news mentions. The AI then uses these insights to craft a unique email that references specific details about the prospect, making every message feel handwritten.",
+    a: "PitchMint researches each prospect — their company website, recent social posts, tech stack, and news mentions. The AI then uses these insights to craft a unique email that references specific details about the prospect, making every message feel handwritten.",
   },
   {
     q: "Will my emails land in spam?",
@@ -148,11 +148,11 @@ const faqs = [
   },
   {
     q: "Can I use my own email account?",
-    a: "Yes — PitchPilot connects to your Gmail or any SMTP email provider. Emails are sent from YOUR email address, maintaining your sender reputation.",
+    a: "Yes — PitchMint connects to your Gmail or any SMTP email provider. Emails are sent from YOUR email address, maintaining your sender reputation.",
   },
   {
     q: "What happens when a prospect replies?",
-    a: "PitchPilot automatically detects replies and pauses the sequence for that prospect. Our AI categorizes the reply (interested, not interested, out of office, etc.) so you can prioritize hot leads.",
+    a: "PitchMint automatically detects replies and pauses the sequence for that prospect. Our AI categorizes the reply (interested, not interested, out of office, etc.) so you can prioritize hot leads.",
   },
   {
     q: "Is there a free plan?",
@@ -223,7 +223,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <span className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-                PitchPilot
+                PitchMint
               </span>
             </Link>
 
@@ -309,7 +309,7 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 0.55 }}
               className="text-lg sm:text-xl text-[var(--pp-text-secondary)] max-w-2xl mx-auto mb-10 leading-relaxed"
             >
-              PitchPilot researches your prospects, writes hyper-personalized cold emails,
+              PitchMint researches your prospects, writes hyper-personalized cold emails,
               and sends automated follow-up sequences.{" "}
               <span className="text-[var(--pp-text-primary)] font-medium">Book more meetings on autopilot.</span>
             </motion.p>
@@ -419,7 +419,7 @@ export default function LandingPage() {
               <span className="gradient-text">close more deals</span>
             </h2>
             <p className="text-[var(--pp-text-secondary)] max-w-2xl mx-auto text-lg">
-              From prospect research to reply detection — PitchPilot handles the entire cold outreach pipeline so you can focus on closing.
+              From prospect research to reply detection — PitchMint handles the entire cold outreach pipeline so you can focus on closing.
             </p>
           </AnimateOnScroll>
 
@@ -487,14 +487,14 @@ export default function LandingPage() {
               {
                 step: "02",
                 title: "AI Writes Emails",
-                description: "PitchPilot researches each prospect and generates a unique, personalized email that references their specific situation.",
+                description: "PitchMint researches each prospect and generates a unique, personalized email that references their specific situation.",
                 icon: Brain,
                 accent: "var(--pp-accent2)",
               },
               {
                 step: "03",
                 title: "Autopilot Outreach",
-                description: "Set up your sequence and let PitchPilot send emails, follow up, and notify you the moment a prospect replies.",
+                description: "Set up your sequence and let PitchMint send emails, follow up, and notify you the moment a prospect replies.",
                 icon: TrendingUp,
                 accent: "var(--pp-accent3)",
               },
@@ -638,7 +638,7 @@ export default function LandingPage() {
               <span className="gradient-text">sales outreach?</span>
             </h2>
             <p className="text-lg text-[var(--pp-text-secondary)] mb-10 max-w-xl mx-auto">
-              Join hundreds of sales teams using PitchPilot to book more meetings with less effort.
+              Join hundreds of sales teams using PitchMint to book more meetings with less effort.
             </p>
             <Button
               asChild
@@ -664,7 +664,7 @@ export default function LandingPage() {
                   <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
                 </svg>
               </div>
-              <span className="text-sm font-bold text-[var(--pp-text-secondary)]" style={{ fontFamily: "var(--font-display)" }}>PitchPilot</span>
+              <span className="text-sm font-bold text-[var(--pp-text-secondary)]" style={{ fontFamily: "var(--font-display)" }}>PitchMint</span>
             </Link>
             <div className="flex items-center gap-6 text-sm text-[var(--pp-text-muted)]">
               <Link href="/terms" className="hover:text-[var(--pp-text-secondary)] transition-colors cursor-pointer">Terms</Link>
@@ -672,7 +672,7 @@ export default function LandingPage() {
               <Link href="/contact" className="hover:text-[var(--pp-text-secondary)] transition-colors cursor-pointer">Contact</Link>
             </div>
             <p className="text-xs text-[var(--pp-text-muted)]/60">
-              © {new Date().getFullYear()} PitchPilot. All rights reserved.
+              © {new Date().getFullYear()} PitchMint. All rights reserved.
             </p>
           </div>
         </div>

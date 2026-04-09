@@ -105,7 +105,7 @@ export default function SignupPage() {
         variants={fadeInStagger}
         className="text-[var(--pp-text-secondary)] text-sm text-center mb-8"
       >
-        Create your PitchPilot account — free to start
+        Create your PitchMint account — free to start
       </motion.p>
 
       {/* Google OAuth */}

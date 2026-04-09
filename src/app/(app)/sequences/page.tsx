@@ -125,7 +125,7 @@ export default function SequencesPage() {
             No sequences yet
           </h3>
           <p className="text-sm text-[var(--pp-text-muted)] max-w-sm mx-auto mb-6">
-            Create your first automated email sequence. PitchPilot&apos;s AI will personalize each message for every prospect.
+            Create your first automated email sequence. PitchMint&apos;s AI will personalize each message for every prospect.
           </p>
           <Button
             onClick={() => setShowCreateModal(true)}

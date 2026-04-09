@@ -594,7 +594,7 @@ export default function SettingsPage() {
       content: (
         <div className="space-y-4">
           <p className="text-sm text-[var(--pp-text-muted)]">
-            Use your API key to integrate PitchPilot with Zapier, Make, n8n, or your CRM.
+            Use your API key to integrate PitchMint with Zapier, Make, n8n, or your CRM.
           </p>
           <div className="flex items-center gap-2">
             <Input

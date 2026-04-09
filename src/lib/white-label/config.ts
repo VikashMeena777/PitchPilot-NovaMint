@@ -47,14 +47,14 @@ export type WhiteLabelConfig = {
 const DEFAULT_CONFIG: Omit<WhiteLabelConfig, "team_id"> = {
   enabled: false,
   branding: {
-    company_name: "PitchPilot",
+    company_name: "PitchMint",
     primary_color: "#6366f1",
     accent_color: "#8b5cf6",
     background_dark: "#0a0a0f",
   },
   email: {
-    from_name: "PitchPilot",
-    from_email: "outreach@pitchpilot.io",
+    from_name: "PitchMint",
+    from_email: "outreach@pitchmint.io",
     unsubscribe_text: "Unsubscribe from future emails",
   },
   domain: {
@@ -73,7 +73,7 @@ const DEFAULT_CONFIG: Omit<WhiteLabelConfig, "team_id"> = {
 
 /**
  * Get white-label config for a team
- * Falls back to PitchPilot defaults
+ * Falls back to PitchMint defaults
  */
 export function getWhiteLabelConfig(
   teamConfig?: Partial<WhiteLabelConfig>
@@ -156,11 +156,11 @@ export function getDomainSetupInstructions(domain: string): {
         type: "CNAME",
         name: domain,
         value: "cname.vercel-dns.com",
-        purpose: "Route traffic to PitchPilot (required)",
+        purpose: "Route traffic to PitchMint (required)",
       },
       {
         type: "TXT",
-        name: `_pitchpilot.${domain}`,
+        name: `_pitchmint.${domain}`,
         value: `verify=pp_${Buffer.from(domain).toString("base64").slice(0, 20)}`,
         purpose: "Domain ownership verification (required)",
       },

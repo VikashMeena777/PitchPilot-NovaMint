@@ -43,7 +43,7 @@ export async function sendProspectEmail(params: {
     .eq("id", user.id)
     .single();
 
-  const senderName = profile?.sending_name || profile?.full_name || "PitchPilot User";
+  const senderName = profile?.sending_name || profile?.full_name || "PitchMint User";
   const userEmail = profile?.sending_email || user.email;
   const companyName = (profile as Record<string, unknown>)?.company_name as string || "";
   const mailingAddress = (profile as Record<string, unknown>)?.mailing_address as string || "";

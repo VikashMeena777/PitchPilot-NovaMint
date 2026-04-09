@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — PitchPilot",
-  description: "PitchPilot terms of service. Please read these terms carefully.",
+  title: "Terms of Service — PitchMint",
+  description: "PitchMint terms of service. Please read these terms carefully.",
 };
 
 export default function TermsOfServicePage() {
@@ -18,7 +18,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">1. Acceptance of Terms</h2>
             <p className="text-zinc-400">
-              By accessing or using PitchPilot (&ldquo;the Service&rdquo;), you agree to be bound 
+              By accessing or using PitchMint (&ldquo;the Service&rdquo;), you agree to be bound 
               by these Terms of Service. If you do not agree to these terms, do not use the Service.
             </p>
           </section>
@@ -26,7 +26,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">2. Description of Service</h2>
             <p className="text-zinc-400">
-              PitchPilot is an AI-powered cold email outreach platform that helps users manage 
+              PitchMint is an AI-powered cold email outreach platform that helps users manage 
               prospects, generate personalized emails, automate email sequences, and track 
               engagement metrics. The Service includes AI content generation, email delivery, 
               prospect research, and analytics.
@@ -35,7 +35,7 @@ export default function TermsOfServicePage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">3. Acceptable Use</h2>
-            <p className="mb-3 text-zinc-400">You agree NOT to use PitchPilot to:</p>
+            <p className="mb-3 text-zinc-400">You agree NOT to use PitchMint to:</p>
             <ul className="list-disc list-inside space-y-1 text-zinc-400">
               <li>Send spam, unsolicited bulk email, or phishing emails</li>
               <li>Violate CAN-SPAM, GDPR, CCPA, or similar regulations</li>
@@ -50,7 +50,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">4. User Responsibilities</h2>
             <ul className="list-disc list-inside space-y-1 text-zinc-400">
-              <li>You are solely responsible for the content of emails sent through PitchPilot</li>
+              <li>You are solely responsible for the content of emails sent through PitchMint</li>
               <li>You must have a lawful basis for contacting each prospect</li>
               <li>You must honor unsubscribe requests promptly</li>
               <li>You must keep your login credentials secure</li>
@@ -61,17 +61,17 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">5. AI-Generated Content</h2>
             <p className="text-zinc-400">
-              PitchPilot uses AI to generate email content, research summaries, and suggestions. 
+              PitchMint uses AI to generate email content, research summaries, and suggestions. 
               While we strive for accuracy, AI-generated content may contain errors or inaccuracies. 
               You are responsible for reviewing and approving all content before sending. 
-              PitchPilot is not liable for any consequences arising from AI-generated content.
+              PitchMint is not liable for any consequences arising from AI-generated content.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">6. Account Plans & Billing</h2>
             <p className="text-zinc-400">
-              PitchPilot offers free and paid plans. Paid plans are billed monthly or annually. 
+              PitchMint offers free and paid plans. Paid plans are billed monthly or annually. 
               You may cancel at any time, and cancellation takes effect at the end of the current 
               billing period. Refunds are not provided for partial billing periods.
             </p>
@@ -89,7 +89,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">8. Limitation of Liability</h2>
             <p className="text-zinc-400">
-              PitchPilot is provided &ldquo;as is&rdquo; without warranties of any kind. We are 
+              PitchMint is provided &ldquo;as is&rdquo; without warranties of any kind. We are 
               not liable for any indirect, incidental, or consequential damages arising from 
               your use of the Service, including but not limited to: email deliverability issues, 
               AI content inaccuracies, data loss, or business interruption.
@@ -99,7 +99,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">9. Data Ownership</h2>
             <p className="text-zinc-400">
-              You retain ownership of all data you upload to PitchPilot, including prospect lists, 
+              You retain ownership of all data you upload to PitchMint, including prospect lists, 
               email templates, and custom content. We do not sell your data to third parties. 
               We may use anonymized, aggregated data to improve our service.
             </p>
@@ -118,8 +118,8 @@ export default function TermsOfServicePage() {
             <h2 className="text-lg font-semibold text-white mb-3">11. Contact</h2>
             <p className="text-zinc-400">
               For questions about these Terms, contact us at{" "}
-              <a href="mailto:support@pitchpilot.dev" className="text-blue-400 hover:underline">
-                support@pitchpilot.dev
+              <a href="mailto:support@pitchmint.dev" className="text-blue-400 hover:underline">
+                support@pitchmint.dev
               </a>
             </p>
           </section>

@@ -100,7 +100,7 @@ export function BulkActionsToolbar({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `pitchpilot-prospects-${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `pitchmint-prospects-${new Date().toISOString().split("T")[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success(`Exported ${result.count} prospects to CSV`);

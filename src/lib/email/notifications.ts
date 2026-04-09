@@ -24,7 +24,7 @@ export async function sendReplyNotification(
   return sendEmail({
     to: userEmail,
     from: defaultFrom,
-    senderName: "PitchPilot",
+    senderName: "PitchMint",
     subject: `🎯 ${props.prospectName} replied to your outreach`,
     body: `${props.prospectName} (${props.prospectEmail}) replied to "${props.subject}". Category: ${props.replyCategory}`,
     bodyHtml: html,
@@ -46,7 +46,7 @@ export async function sendDailyDigest(
   return sendEmail({
     to: userEmail,
     from: defaultFrom,
-    senderName: "PitchPilot",
+    senderName: "PitchMint",
     subject: `📊 Daily Digest — ${props.stats.emailsSent} sent, ${props.stats.positiveReplies} hot leads`,
     body: `Your daily outreach summary for ${props.date}`,
     bodyHtml: html,
@@ -68,7 +68,7 @@ export async function sendWeeklyReport(
   return sendEmail({
     to: userEmail,
     from: defaultFrom,
-    senderName: "PitchPilot",
+    senderName: "PitchMint",
     subject: `📈 Weekly Report — ${props.stats.emailsSent} emails, ${props.stats.positiveReplies} leads, ${props.stats.meetingsBooked} meetings`,
     body: `Your weekly performance report for ${props.weekRange}`,
     bodyHtml: html,

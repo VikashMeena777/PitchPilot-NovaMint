@@ -28,8 +28,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "PitchPilot — Your AI Sales Rep That Works 24/7",
-    template: "%s | PitchPilot",
+    default: "PitchMint — Your AI Sales Rep That Works 24/7",
+    template: "%s | PitchMint",
   },
   description:
     "AI-powered sales outreach that researches prospects, writes hyper-personalized cold emails, and sends automated follow-up sequences. Book more meetings on autopilot.",
@@ -41,18 +41,18 @@ export const metadata: Metadata = {
     "prospect research",
     "AI SDR",
   ],
-  authors: [{ name: "PitchPilot" }],
+  authors: [{ name: "PitchMint" }],
   openGraph: {
-    title: "PitchPilot — Your AI Sales Rep That Works 24/7",
+    title: "PitchMint — Your AI Sales Rep That Works 24/7",
     description:
       "AI-powered sales outreach that researches prospects, writes hyper-personalized cold emails, and sends automated follow-up sequences.",
     type: "website",
     locale: "en_US",
-    siteName: "PitchPilot",
+    siteName: "PitchMint",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PitchPilot — Your AI Sales Rep That Works 24/7",
+    title: "PitchMint — Your AI Sales Rep That Works 24/7",
     description:
       "AI-powered sales outreach that researches prospects, writes hyper-personalized cold emails, and sends automated follow-up sequences.",
   },

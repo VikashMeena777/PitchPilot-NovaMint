@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** PitchPilot
+**Project:** PitchMint
 **Generated:** 2026-04-01 17:46:46
 **Category:** Smart Home/IoT Dashboard
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Cookie } from "lucide-react";
 
-const CONSENT_KEY = "pitchpilot_cookie_consent";
+const CONSENT_KEY = "pitchmint_cookie_consent";
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -41,7 +41,7 @@ export function CookieConsent() {
               We value your privacy
             </h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              We use essential cookies to make PitchPilot work. We&apos;d also like to use analytics 
+              We use essential cookies to make PitchMint work. We&apos;d also like to use analytics 
               cookies to understand how you use our platform and improve your experience. 
               Read our{" "}
               <a href="/privacy" className="text-violet-400 hover:text-violet-300 underline">

@@ -52,7 +52,7 @@ export async function createOrder(params: {
       return_url: params.returnUrl + "&order_id={order_id}",
       notify_url: (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000") + "/api/billing/webhook",
     },
-    order_note: `PitchPilot ${params.planId} plan purchase`,
+    order_note: `PitchMint ${params.planId} plan purchase`,
     order_tags: {
       plan_id: params.planId,
     },

@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — PitchPilot",
-  description: "PitchPilot's privacy policy explaining how we collect, use, and protect your data.",
+  title: "Privacy Policy — PitchMint",
+  description: "PitchMint's privacy policy explaining how we collect, use, and protect your data.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
         <div className="prose prose-invert max-w-none space-y-8 text-[var(--pp-text-secondary)] text-[15px] leading-relaxed">
           <section>
             <h2 className="text-xl font-semibold text-[var(--pp-text-primary)] mb-3">1. Information We Collect</h2>
-            <p>When you use PitchPilot, we collect the following information:</p>
+            <p>When you use PitchMint, we collect the following information:</p>
             <ul className="list-disc ml-6 space-y-1.5 mt-2">
               <li><strong>Account Information:</strong> Name, email address, company name, and business details you provide during registration and onboarding.</li>
               <li><strong>Prospect Data:</strong> Contact information you upload or enter for your sales prospects, including names, email addresses, job titles, and company information.</li>
@@ -84,7 +84,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-xl font-semibold text-[var(--pp-text-primary)] mb-3">6. Email Compliance</h2>
             <p>
-              PitchPilot is designed to comply with CAN-SPAM, GDPR, and CCPA regulations. All outreach emails sent
+              PitchMint is designed to comply with CAN-SPAM, GDPR, and CCPA regulations. All outreach emails sent
               through our platform include an unsubscribe mechanism. We process unsubscribe requests immediately and
               permanently stop all email communications to unsubscribed contacts.
             </p>
@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-semibold text-[var(--pp-text-primary)] mb-3">9. Changes to This Policy</h2>
             <p>
               We may update this policy periodically. Material changes will be communicated via email or in-app
-              notification. Continued use of PitchPilot after changes constitutes acceptance of the updated policy.
+              notification. Continued use of PitchMint after changes constitutes acceptance of the updated policy.
             </p>
           </section>
 
@@ -127,7 +127,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="mt-12 pt-6 border-t border-[var(--pp-border-subtle)]">
           <a href="/" className="text-sm text-[var(--pp-accent1)] hover:underline">
-            &larr; Back to PitchPilot
+            &larr; Back to PitchMint
           </a>
         </div>
       </div>

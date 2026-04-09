@@ -111,7 +111,7 @@ export function AppSidebar() {
                 className="text-lg font-bold tracking-tight text-[var(--pp-text-primary)] whitespace-nowrap"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                PitchPilot
+                PitchMint
               </motion.span>
             )}
           </AnimatePresence>

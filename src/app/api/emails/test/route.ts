@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     const senderName =
-      profile?.sending_name || profile?.full_name || "PitchPilot User";
+      profile?.sending_name || profile?.full_name || "PitchMint User";
 
     // ─── Strategy 1: Gmail (primary when connected) ──────────────
     if (profile?.gmail_connected && profile?.gmail_email) {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       const htmlContent = await render(
         TestEmail({
           senderName,
-          companyName: profile?.company_name || "PitchPilot",
+          companyName: profile?.company_name || "PitchMint",
           sendingEmail: profile.gmail_email,
           replyTo: profile?.sending_email || user.email || "",
         })
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
 
       const gmailResult = await sendViaGmail(user.id, {
         to: recipientEmail,
-        subject: "✅ PitchPilot — Your Gmail Setup is Working!",
-        body: `Test email from PitchPilot — your Gmail integration is working correctly.`,
+        subject: "✅ PitchMint — Your Gmail Setup is Working!",
+        body: `Test email from PitchMint — your Gmail integration is working correctly.`,
         bodyHtml: htmlContent,
         senderName,
       });
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const htmlContent = await render(
       TestEmail({
         senderName,
-        companyName: profile?.company_name || "PitchPilot",
+        companyName: profile?.company_name || "PitchMint",
         sendingEmail: fromAddress,
         replyTo: profile?.sending_email || user.email || "",
       })
@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
       from: fromAddress,
       senderName,
       replyTo: profile?.sending_email || user.email || undefined,
-      subject: "✅ PitchPilot — Your Email Setup is Working!",
-      body: `Test email from PitchPilot — your configuration is working correctly.`,
+      subject: "✅ PitchMint — Your Email Setup is Working!",
+      body: `Test email from PitchMint — your configuration is working correctly.`,
       bodyHtml: htmlContent,
       trackOpens: true,
       trackClicks: false,

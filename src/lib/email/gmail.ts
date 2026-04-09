@@ -131,7 +131,7 @@ function buildRawEmail(
     `MIME-Version: 1.0`,
     replyTo ? `Reply-To: ${replyTo}` : "",
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    `X-Mailer: PitchPilot`,
+    `X-Mailer: PitchMint`,
   ]
     .filter(Boolean)
     .join("\r\n");

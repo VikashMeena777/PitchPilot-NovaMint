@@ -156,7 +156,7 @@ export default function OnboardingPage() {
               </svg>
             </div>
             <span className="text-xl font-bold tracking-tight text-[var(--pp-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
-              PitchPilot
+              PitchMint
             </span>
           </div>
           <h1

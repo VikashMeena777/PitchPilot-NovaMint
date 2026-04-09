@@ -39,7 +39,7 @@ export default function ContactPage() {
                 </svg>
               </div>
               <span className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
-                PitchPilot
+                PitchMint
               </span>
             </Link>
             <Button variant="ghost" asChild className="text-[var(--pp-text-secondary)] hover:text-[var(--pp-text-primary)] cursor-pointer">
@@ -216,7 +216,7 @@ export default function ContactPage() {
       <footer className="border-t border-[var(--pp-border-subtle)] py-8 bg-[var(--pp-bg-deepest)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-[var(--pp-text-muted)]">
-            © {new Date().getFullYear()} PitchPilot. All rights reserved.
+            © {new Date().getFullYear()} PitchMint. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm text-[var(--pp-text-muted)]">
             <Link href="/terms" className="hover:text-[var(--pp-text-primary)] transition-colors cursor-pointer">Terms</Link>

@@ -147,7 +147,7 @@ async function enrichViaDomain(email: string): Promise<EnrichmentResult | null> 
       signal: AbortSignal.timeout(5000),
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; PitchPilot/1.0; +https://pitchpilot.co)",
+          "Mozilla/5.0 (compatible; PitchMint/1.0; +https://pitchmint.co)",
       },
     });
 

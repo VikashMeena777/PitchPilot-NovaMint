@@ -36,7 +36,7 @@ const palette = {
 const font =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pitchpilot.novamintnetworks.in";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pitchmint.novamintnetworks.in";
 
 /* ────────────────────────────────────────────
    1. Reply Notification Email

@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
 
 // ============================================
 // Cashfree Configuration — Order (Payment) API
@@ -131,6 +130,9 @@ export function verifyWebhookSignature(
   const clientSecret = process.env.CASHFREE_CLIENT_SECRET;
   if (!clientSecret) return false;
 
+  // Dynamic require to avoid Turbopack compilation issues with Node.js built-ins
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const crypto = require("crypto");
   const payload = timestamp + rawBody;
   const expectedSignature = crypto
     .createHmac("sha256", clientSecret)

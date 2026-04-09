@@ -121,6 +121,15 @@ function BillingPageContent() {
         body: JSON.stringify({ planId }),
       });
 
+      // Guard against non-JSON responses (Next.js error pages return HTML)
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        console.error("[Billing] API returned non-JSON:", res.status, text.substring(0, 500));
+        toast.error(`Server error (${res.status}). Please check terminal logs.`);
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {

@@ -1,0 +1,28 @@
+name: "Cron: Supabase Keep-Alive"
+
+on:
+  schedule:
+    # Every 2 days at 06:00 UTC
+    - cron: "0 6 */2 * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Keep-Alive
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            "${{ secrets.APP_URL }}/api/cron/keep-alive")
+          
+          echo "Response code: $response"
+          
+          if [ "$response" != "200" ]; then
+            echo "❌ Keep-alive ping failed with status $response"
+            exit 1
+          fi
+          
+          echo "✅ Supabase keep-alive ping successful"

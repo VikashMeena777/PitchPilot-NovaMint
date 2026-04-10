@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, MessageSquare, Send, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,11 +34,13 @@ export default function ContactPage() {
         <div className="glass-strong">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 cursor-pointer group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center shadow-md glow-indigo transition-transform duration-200 group-hover:scale-105">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-                </svg>
-              </div>
+              <Image
+                src="/PitchMint Logo.jpg"
+                alt="PitchMint"
+                width={36}
+                height={36}
+                className="rounded-xl flex-shrink-0 shadow-md transition-transform duration-200 group-hover:scale-105"
+              />
               <span className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
                 PitchMint
               </span>

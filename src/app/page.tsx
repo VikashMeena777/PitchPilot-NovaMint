@@ -3,6 +3,7 @@
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import {
   ArrowRight,
@@ -217,11 +218,13 @@ export default function LandingPage() {
         <div className="glass-strong">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 cursor-pointer group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center flex-shrink-0 shadow-md glow-indigo transition-transform duration-200 group-hover:scale-105">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-                </svg>
-              </div>
+              <Image
+                src="/PitchMint Logo.jpg"
+                alt="PitchMint"
+                width={36}
+                height={36}
+                className="rounded-xl flex-shrink-0 shadow-md transition-transform duration-200 group-hover:scale-105"
+              />
               <span className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
                 PitchMint
               </span>
@@ -659,11 +662,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-5">
             <Link href="/" className="flex items-center gap-2 cursor-pointer group">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-                </svg>
-              </div>
+              <Image
+                src="/PitchMint Logo.jpg"
+                alt="PitchMint"
+                width={28}
+                height={28}
+                className="rounded-lg transition-transform duration-200 group-hover:scale-105"
+              />
               <span className="text-sm font-bold text-[var(--pp-text-secondary)]" style={{ fontFamily: "var(--font-display)" }}>PitchMint</span>
             </Link>
             <div className="flex items-center gap-6 text-sm text-[var(--pp-text-muted)]">

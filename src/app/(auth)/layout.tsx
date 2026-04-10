@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AuthLayout({
   children,
@@ -39,11 +40,13 @@ export default function AuthLayout({
       >
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8 cursor-pointer group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center shadow-lg glow-indigo transition-transform duration-200 group-hover:scale-105">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-            </svg>
-          </div>
+          <Image
+            src="/PitchMint Logo.jpg"
+            alt="PitchMint"
+            width={40}
+            height={40}
+            className="rounded-xl shadow-lg transition-transform duration-200 group-hover:scale-105"
+          />
           <span className="text-xl font-bold tracking-tight text-[var(--pp-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
             PitchMint
           </span>

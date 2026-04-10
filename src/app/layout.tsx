@@ -60,6 +60,11 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: "/PitchMint Logo.jpg",
+    shortcut: "/PitchMint Logo.jpg",
+    apple: "/PitchMint Logo.jpg",
+  },
 };
 
 export default function RootLayout({

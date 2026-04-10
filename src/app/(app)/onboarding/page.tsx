@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -150,11 +151,13 @@ export default function OnboardingPage() {
         {/* Logo + Title */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center shadow-lg glow-indigo">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-              </svg>
-            </div>
+            <Image
+              src="/PitchMint Logo.jpg"
+              alt="PitchMint"
+              width={40}
+              height={40}
+              className="rounded-xl shadow-lg"
+            />
             <span className="text-xl font-bold tracking-tight text-[var(--pp-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
               PitchMint
             </span>

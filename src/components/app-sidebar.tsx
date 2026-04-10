@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -96,11 +97,13 @@ export function AppSidebar() {
       {/* Logo */}
       <div className="flex items-center h-16 border-b border-[var(--pp-border-subtle)] px-4">
         <Link href="/" className="flex items-center gap-2.5 cursor-pointer group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--pp-accent1)] to-[var(--pp-accent4)] flex items-center justify-center flex-shrink-0 shadow-md glow-indigo transition-transform duration-200 group-hover:scale-105">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-            </svg>
-          </div>
+          <Image
+              src="/PitchMint Logo.jpg"
+              alt="PitchMint"
+              width={36}
+              height={36}
+              className="rounded-xl flex-shrink-0 shadow-md transition-transform duration-200 group-hover:scale-105"
+            />
           <AnimatePresence>
             {!collapsed && (
               <motion.span

@@ -121,25 +121,39 @@ export async function getOrderPayments(orderId: string) {
 
 // ============================================
 // Verify Webhook Signature
+// Uses CASHFREE_WEBHOOK_SECRET (NOT the API client secret)
 // ============================================
 export function verifyWebhookSignature(
   rawBody: string,
   timestamp: string,
   signature: string
 ): boolean {
-  const clientSecret = process.env.CASHFREE_CLIENT_SECRET;
-  if (!clientSecret) return false;
+  // Use the WEBHOOK secret, NOT the API client secret
+  const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error("CRITICAL: CASHFREE_WEBHOOK_SECRET not configured — rejecting webhook");
+    return false;
+  }
+
+  if (!signature) {
+    console.error("CRITICAL: No signature header — possible forged request");
+    return false;
+  }
 
   // Dynamic require to avoid Turbopack compilation issues with Node.js built-ins
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const crypto = require("crypto");
   const payload = timestamp + rawBody;
   const expectedSignature = crypto
-    .createHmac("sha256", clientSecret)
+    .createHmac("sha256", webhookSecret)
     .update(payload)
     .digest("base64");
 
-  return signature === expectedSignature;
+  // Use timing-safe comparison to prevent timing attacks
+  const sigBuf = Buffer.from(signature);
+  const expectedBuf = Buffer.from(expectedSignature);
+  if (sigBuf.length !== expectedBuf.length) return false;
+  return crypto.timingSafeEqual(sigBuf, expectedBuf);
 }
 
 // ============================================

@@ -2,7 +2,7 @@ name: "Cron: Check Gmail Replies"
 
 on:
   schedule:
-    - cron: "*/5 * * * *"  # Every 5 minutes
+    - cron: "*/2 * * * *"  # Every 2 minutes
   workflow_dispatch: {}
 
 jobs:

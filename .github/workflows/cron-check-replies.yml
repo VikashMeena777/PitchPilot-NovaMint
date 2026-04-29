@@ -1,0 +1,28 @@
+name: "Cron: Check Gmail Replies"
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # Every 5 minutes
+  workflow_dispatch: {}
+
+jobs:
+  check-replies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll Gmail for replies
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.APP_URL }}/api/cron/check-replies" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120)
+          
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Cron failed with status $http_code"
+            exit 1
+          fi

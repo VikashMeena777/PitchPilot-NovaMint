@@ -255,6 +255,166 @@ export async function sendViaGmail(
 }
 
 /**
+ * Check Gmail inbox for replies to sent outreach emails
+ * Uses gmail.readonly scope to search for inbound messages
+ * that are replies to emails we previously sent.
+ */
+export async function checkGmailReplies(
+  userId: string
+): Promise<{ found: number; errors: number }> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return { found: 0, errors: 0 };
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const accessToken = await getValidToken(userId);
+
+  if (!accessToken) {
+    console.warn(`[Gmail] No valid token for user ${userId}`);
+    return { found: 0, errors: 0 };
+  }
+
+  // Get sent emails that haven't been replied to yet (last 30 days)
+  const thirtyDaysAgo = new Date(
+    Date.now() - 30 * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  const { data: sentEmails, error: fetchErr } = await supabase
+    .from("emails")
+    .select("id, to_email, subject, message_id, prospect_id")
+    .eq("user_id", userId)
+    .eq("status", "sent")
+    .eq("has_reply", false)
+    .gte("sent_at", thirtyDaysAgo)
+    .order("sent_at", { ascending: false })
+    .limit(50);
+
+  if (fetchErr || !sentEmails || sentEmails.length === 0) {
+    return { found: 0, errors: 0 };
+  }
+
+  let found = 0;
+  let errors = 0;
+
+  for (const email of sentEmails) {
+    try {
+      // Search Gmail for replies from this prospect
+      // Use "from:prospect@email.com" + "subject:re: original subject" query
+      const searchQuery = encodeURIComponent(
+        `from:${email.to_email} subject:Re: ${(email.subject || "").replace(/^Re:\s*/i, "")} newer_than:30d`
+      );
+
+      const searchResponse = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${searchQuery}&maxResults=5`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      if (!searchResponse.ok) {
+        errors++;
+        continue;
+      }
+
+      const searchData = (await searchResponse.json()) as {
+        messages?: { id: string; threadId: string }[];
+        resultSizeEstimate?: number;
+      };
+
+      if (
+        !searchData.messages ||
+        searchData.messages.length === 0
+      ) {
+        continue; // No replies found for this email
+      }
+
+      // Get the first reply message content
+      const replyMsgId = searchData.messages[0].id;
+      const msgResponse = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${replyMsgId}?format=full`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      if (!msgResponse.ok) {
+        errors++;
+        continue;
+      }
+
+      const msgData = (await msgResponse.json()) as {
+        id: string;
+        snippet: string;
+        internalDate: string;
+        payload?: {
+          headers?: { name: string; value: string }[];
+          body?: { data?: string };
+          parts?: { mimeType: string; body?: { data?: string } }[];
+        };
+      };
+
+      // Extract reply body from the message
+      let replyBody = msgData.snippet || "";
+
+      // Try to get full text body
+      if (msgData.payload?.parts) {
+        const textPart = msgData.payload.parts.find(
+          (p) => p.mimeType === "text/plain"
+        );
+        if (textPart?.body?.data) {
+          replyBody = Buffer.from(textPart.body.data, "base64").toString(
+            "utf-8"
+          );
+        }
+      } else if (msgData.payload?.body?.data) {
+        replyBody = Buffer.from(
+          msgData.payload.body.data,
+          "base64"
+        ).toString("utf-8");
+      }
+
+      const replyDate = msgData.internalDate
+        ? new Date(parseInt(msgData.internalDate)).toISOString()
+        : new Date().toISOString();
+
+      // Update the email record with reply info
+      await supabase
+        .from("emails")
+        .update({
+          has_reply: true,
+          reply_received_at: replyDate,
+          reply_body: replyBody.substring(0, 5000), // Cap at 5k chars
+        })
+        .eq("id", email.id);
+
+      // Update prospect status to "replied"
+      if (email.prospect_id) {
+        await supabase
+          .from("prospects")
+          .update({
+            status: "replied",
+            last_replied_at: replyDate,
+          })
+          .eq("id", email.prospect_id);
+      }
+
+      found++;
+      console.log(
+        `[Gmail] Reply detected for email ${email.id} from ${email.to_email}`
+      );
+    } catch (err) {
+      errors++;
+      console.error(
+        `[Gmail] Error checking reply for email ${email.id}:`,
+        err
+      );
+    }
+  }
+
+  return { found, errors };
+}
+
+/**
  * Disconnect Gmail by clearing tokens
  */
 export async function disconnectGmail(userId: string): Promise<boolean> {

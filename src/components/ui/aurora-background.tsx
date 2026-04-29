@@ -15,7 +15,7 @@ interface AuroraBackgroundProps {
 export function AuroraBackground({
   className = "",
   children,
-  starCount = 40,
+  starCount = 30,
   intensity = 1,
 }: AuroraBackgroundProps) {
   // Pre-generate star positions so they don't re-render
@@ -25,31 +25,31 @@ export function AuroraBackground({
         id: i,
         x: `${Math.random() * 100}%`,
         y: `${Math.random() * 100}%`,
-        size: Math.random() * 2.5 + 1,
+        size: Math.random() * 2 + 1,
         delay: Math.random() * 6,
         duration: Math.random() * 3 + 2,
-        maxOpacity: Math.random() * 0.7 + 0.3,
+        maxOpacity: Math.random() * 0.6 + 0.2,
       })),
     [starCount]
   );
 
   return (
     <div className={`relative w-full overflow-hidden ${className}`}>
-      {/* Background layers */}
+      {/* Background layers — lightweight, no blur filters */}
       <div className="absolute inset-0" aria-hidden="true">
-        {/* Base radial gradient */}
+        {/* Base radial gradient — static, zero GPU cost */}
         <div
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 120% 80% at 50% 0%, rgba(99,102,241,${0.08 * intensity}) 0%, transparent 50%),
-              radial-gradient(ellipse 80% 60% at 80% 50%, rgba(139,92,246,${0.06 * intensity}) 0%, transparent 50%),
-              radial-gradient(ellipse 60% 80% at 20% 80%, rgba(6,182,212,${0.04 * intensity}) 0%, transparent 50%)
+              radial-gradient(ellipse 120% 80% at 50% 0%, rgba(99,102,241,${0.1 * intensity}) 0%, transparent 50%),
+              radial-gradient(ellipse 80% 60% at 80% 50%, rgba(139,92,246,${0.07 * intensity}) 0%, transparent 50%),
+              radial-gradient(ellipse 60% 80% at 20% 80%, rgba(6,182,212,${0.05 * intensity}) 0%, transparent 50%)
             `,
           }}
         />
 
-        {/* Animated aurora blob 1 — Indigo */}
+        {/* Soft animated glow 1 — Indigo (opacity only, no blur) */}
         <motion.div
           className="absolute rounded-full"
           style={{
@@ -59,23 +59,19 @@ export function AuroraBackground({
             maxHeight: "700px",
             top: "-15%",
             left: "-5%",
-            background: `radial-gradient(circle, rgba(99,102,241,${0.15 * intensity}) 0%, transparent 70%)`,
-            filter: "blur(80px)",
+            background: `radial-gradient(circle, rgba(99,102,241,${0.12 * intensity}) 0%, transparent 70%)`,
           }}
           animate={{
-            x: [0, 60, -30, 0],
-            y: [0, -40, 30, 0],
-            scale: [1, 1.15, 0.95, 1],
+            opacity: [0.6, 1, 0.7, 0.6],
           }}
           transition={{
-            duration: 20,
+            duration: 10,
             repeat: Infinity,
-            repeatType: "mirror",
             ease: "easeInOut",
           }}
         />
 
-        {/* Animated aurora blob 2 — Violet */}
+        {/* Soft animated glow 2 — Violet (opacity only, no blur) */}
         <motion.div
           className="absolute rounded-full"
           style={{
@@ -85,23 +81,19 @@ export function AuroraBackground({
             maxHeight: "600px",
             bottom: "-10%",
             right: "-5%",
-            background: `radial-gradient(circle, rgba(139,92,246,${0.12 * intensity}) 0%, transparent 70%)`,
-            filter: "blur(90px)",
+            background: `radial-gradient(circle, rgba(139,92,246,${0.1 * intensity}) 0%, transparent 70%)`,
           }}
           animate={{
-            x: [0, -50, 30, 0],
-            y: [0, 30, -40, 0],
-            scale: [1, 1.2, 0.9, 1],
+            opacity: [0.5, 0.9, 0.6, 0.5],
           }}
           transition={{
-            duration: 25,
+            duration: 14,
             repeat: Infinity,
-            repeatType: "mirror",
             ease: "easeInOut",
           }}
         />
 
-        {/* Animated aurora blob 3 — Cyan accent */}
+        {/* Soft animated glow 3 — Cyan (opacity only, no blur) */}
         <motion.div
           className="absolute rounded-full"
           style={{
@@ -111,23 +103,19 @@ export function AuroraBackground({
             maxHeight: "500px",
             top: "40%",
             left: "30%",
-            background: `radial-gradient(circle, rgba(6,182,212,${0.08 * intensity}) 0%, transparent 70%)`,
-            filter: "blur(100px)",
+            background: `radial-gradient(circle, rgba(6,182,212,${0.07 * intensity}) 0%, transparent 70%)`,
           }}
           animate={{
-            x: [0, 40, -20, 0],
-            y: [0, -30, 20, 0],
-            rotate: [0, 90, 180, 360],
+            opacity: [0.4, 0.8, 0.5, 0.4],
           }}
           transition={{
-            duration: 35,
+            duration: 18,
             repeat: Infinity,
-            repeatType: "mirror",
             ease: "easeInOut",
           }}
         />
 
-        {/* Bottom glow — gives "landing dock" effect */}
+        {/* Bottom glow — static */}
         <div
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[120%] h-[300px]"
           style={{
@@ -136,7 +124,7 @@ export function AuroraBackground({
         />
       </div>
 
-      {/* Twinkling stars — ABOVE content so they're visible */}
+      {/* Twinkling stars — lightweight opacity animation */}
       <div className="absolute inset-0 z-20 pointer-events-none" aria-hidden="true">
         {stars.map((star) => (
           <motion.div
@@ -147,7 +135,6 @@ export function AuroraBackground({
               top: star.y,
               width: star.size,
               height: star.size,
-              boxShadow: `0 0 ${star.size * 3}px ${star.size}px rgba(255,255,255,0.15)`,
             }}
             animate={{
               opacity: [0, star.maxOpacity, 0],
@@ -167,3 +154,4 @@ export function AuroraBackground({
     </div>
   );
 }
+

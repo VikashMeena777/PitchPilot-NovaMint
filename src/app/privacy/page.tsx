@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "April 9, 2026";
+  const lastUpdated = "May 15, 2026";
 
   return (
     <div className="min-h-screen bg-[var(--pp-bg-deepest)]">
@@ -38,13 +38,17 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-semibold text-[var(--pp-text-primary)] mb-3">2. How We Use Your Information</h2>
             <ul className="list-disc ml-6 space-y-1.5">
               <li>To provide and maintain our email outreach platform</li>
-              <li>To generate AI-powered personalized emails and research insights</li>
+              <li>To generate AI-powered personalized emails and research insights using data you provide within PitchMint (prospect info, company details)</li>
               <li>To send emails on your behalf to your designated prospects</li>
+              <li>To detect replies to your outreach emails and update prospect statuses accordingly</li>
               <li>To track email performance metrics (opens, clicks, replies)</li>
               <li>To process payments and manage your subscription</li>
-              <li>To improve our AI models and service quality</li>
               <li>To send you service-related notifications and updates</li>
             </ul>
+            <p className="mt-3">
+              We do <strong>not</strong> use any data obtained from Google APIs for advertising, market research,
+              AI/ML model training, or any purpose unrelated to providing the core functionality of PitchMint.
+            </p>
           </section>
 
           {/* Google-specific section required for OAuth verification */}
@@ -52,13 +56,14 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-semibold text-[var(--pp-text-primary)] mb-3">3. Google User Data &amp; Gmail Integration</h2>
             <p>
               PitchMint offers an optional Gmail integration that allows you to send outreach emails directly from your
-              Gmail account. This section specifically addresses how we handle data obtained through Google APIs.
+              Gmail account and automatically detect when prospects reply. This section specifically addresses how we handle data obtained through Google APIs.
             </p>
 
             <h3 className="text-lg font-medium text-[var(--pp-text-primary)] mt-5 mb-2">3.1 What Google Data We Access</h3>
             <p>When you choose to connect your Gmail account, we request access to the following scopes:</p>
             <ul className="list-disc ml-6 space-y-1.5 mt-2">
               <li><strong>Gmail Send (<code className="text-xs bg-[var(--pp-bg-card)] px-1.5 py-0.5 rounded">gmail.send</code>):</strong> Allows PitchMint to send outreach emails from your Gmail account on your behalf. We only send emails that you have explicitly composed or approved through our platform.</li>
+              <li><strong>Gmail Metadata (<code className="text-xs bg-[var(--pp-bg-card)] px-1.5 py-0.5 rounded">gmail.metadata</code>):</strong> Allows PitchMint to read email metadata (sender, recipient, subject line, date) to detect when a prospect has replied to your outreach email. We only check for replies to emails that were sent through PitchMint. We do <strong>not</strong> read the body or content of any emails — only headers and metadata.</li>
               <li><strong>Email Address (<code className="text-xs bg-[var(--pp-bg-card)] px-1.5 py-0.5 rounded">userinfo.email</code>):</strong> Used to identify your Google account and display your connected Gmail address in your settings.</li>
             </ul>
 
@@ -66,18 +71,19 @@ export default function PrivacyPolicyPage() {
             <p>Your Google data is used exclusively for the following purposes:</p>
             <ul className="list-disc ml-6 space-y-1.5 mt-2">
               <li><strong>Sending Emails:</strong> We use the Gmail API to send outreach emails that you create, schedule, or approve through PitchMint. We never send unsolicited emails without your action.</li>
+              <li><strong>Reply Detection:</strong> We periodically check your Gmail metadata to detect replies from prospects to emails you sent through PitchMint. When a reply is detected, we update the prospect&apos;s status to &quot;Replied&quot; and pause any automated follow-up sequences. We only read email headers (From, Subject, Date) — never the email body or content.</li>
               <li><strong>Account Identification:</strong> We display your connected Gmail address in your Settings page so you can verify which account is connected.</li>
             </ul>
             <p className="mt-3">
-              We do <strong>not</strong> use your Google data for advertising, market research, or any purpose unrelated
-              to the core functionality of sending emails through PitchMint.
+              We do <strong>not</strong> use your Google data for advertising, market research, AI/ML model training,
+              or any purpose unrelated to the core functionality of sending outreach emails and detecting replies through PitchMint.
             </p>
 
             <h3 className="text-lg font-medium text-[var(--pp-text-primary)] mt-5 mb-2">3.3 How We Store Google Data</h3>
             <ul className="list-disc ml-6 space-y-1.5 mt-2">
               <li><strong>OAuth Tokens:</strong> We securely store your Gmail OAuth refresh token and access token in our database (Supabase, hosted on AWS). These tokens are stored in encrypted columns with row-level security, ensuring only your account can access them.</li>
               <li><strong>Gmail Address:</strong> Your connected Gmail address is stored in your user profile for display purposes.</li>
-              <li><strong>No Email Content Storage:</strong> We do not read, store, or cache any emails from your Gmail inbox. The <code className="text-xs bg-[var(--pp-bg-card)] px-1.5 py-0.5 rounded">gmail.send</code> scope only allows sending — not reading your inbox.</li>
+              <li><strong>Reply Detection Data:</strong> When a reply is detected, we store only the fact that a reply was received (timestamp and reply status). We do not store any email body content obtained via Google APIs.</li>
             </ul>
 
             <h3 className="text-lg font-medium text-[var(--pp-text-primary)] mt-5 mb-2">3.4 How to Disconnect &amp; Delete Google Data</h3>
@@ -98,7 +104,7 @@ export default function PrivacyPolicyPage() {
                 , including the <strong>Limited Use requirements</strong>. Specifically:
               </p>
               <ul className="list-disc ml-6 space-y-1.5 mt-3 text-sm">
-                <li>We only use Google data to provide and improve the email sending functionality you explicitly requested.</li>
+                <li>We only use Google data to provide the email sending and reply detection functionality you explicitly requested. We do not use Google data to improve AI models, train machine learning systems, or for any purpose beyond providing the core application features.</li>
                 <li>We do <strong>not</strong> transfer Google data to third parties, except as necessary to provide the service (e.g., sending the email via Gmail API), with your explicit consent, or for legal/security reasons.</li>
                 <li>We do <strong>not</strong> use Google data for serving advertisements.</li>
                 <li>We do <strong>not</strong> allow humans to read your Google data, unless you provide affirmative consent for specific messages, it is necessary for security purposes, or it is required by law.</li>
@@ -119,7 +125,7 @@ export default function PrivacyPolicyPage() {
             <h2 className="text-xl font-semibold text-[var(--pp-text-primary)] mb-3">5. Data Sharing</h2>
             <p>We do <strong>not</strong> sell your personal data. We share information only with:</p>
             <ul className="list-disc ml-6 space-y-1.5 mt-2">
-              <li><strong>Service Providers:</strong> Resend (email delivery), Groq and Google (AI processing), Cashfree (payments), Supabase (database), Google Gmail API (email sending when Gmail is connected).</li>
+              <li><strong>Service Providers:</strong> Resend (email delivery), Groq and Google (AI processing for email personalization), Cashfree (payments), Supabase (database), Google Gmail API (email sending and reply detection when Gmail is connected).</li>
               <li><strong>Legal Requirements:</strong> When required by law, court order, or governmental regulation.</li>
             </ul>
             <p className="mt-3">
